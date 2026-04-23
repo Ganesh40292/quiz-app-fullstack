@@ -65,7 +65,22 @@ quiz-app-project/
 
 ---
 
-## 🗄️ Database Setup
+## 🚀 Getting Started (Complete Setup)
+
+Follow these steps to run the project locally.
+
+---
+
+### 🔽 1. Clone the Repository
+
+```bash
+git clone https://github.com/Ganesh40292/quiz-app-react-springboot.git
+cd quiz-app-react-springboot
+```
+
+---
+
+### 🗄️ 2. Setup Database (MySQL)
 
 ```sql
 CREATE DATABASE quizdb;
@@ -78,14 +93,14 @@ CREATE DATABASE quizdb;
 
 ---
 
-## ⚙️ Backend Setup
+### ⚙️ 3. Run Backend (Spring Boot)
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-Runs on:
+📍 Backend runs at:
 
 ```
 http://localhost:8080
@@ -93,7 +108,9 @@ http://localhost:8080
 
 ---
 
-## 💻 Frontend Setup
+### 💻 4. Run Frontend (React)
+
+Open new terminal:
 
 ```bash
 cd frontend
@@ -101,11 +118,30 @@ npm install
 npm start
 ```
 
-Runs on:
+📍 Frontend runs at:
 
 ```
 http://localhost:3000
 ```
+
+---
+
+### 🔐 5. Login Credentials
+
+| Role  | Username | Password  |
+| ----- | -------- | --------- |
+| Admin | admin    | Admin@123 |
+| User  | user     | User@123  |
+
+---
+
+### ✅ 6. Done!
+
+* Open browser → `http://localhost:3000`
+* Login → Take quiz / Admin panel
+
+---
+
 
 ---
 
@@ -137,23 +173,21 @@ GET    /api/admin/questions
 
 ---
 
-## 🔑 Default Credentials
-
-| Role  | Username | Password  |
-| ----- | -------- | --------- |
-| Admin | admin    | Admin@123 |
-| User  | user     | User@123  |
-
----
 
 ## 📸 Screenshots
 
 * Login Page
-* Quiz Page
-* Result Page
-* Admin Dashboard
+  <img width="1913" height="1012" alt="Screenshot 2026-04-23 203419" src="https://github.com/user-attachments/assets/93776cc9-c92d-4e74-ba24-4f5c8cdf8a94" />
 
-*(Add screenshots here for extra marks ⭐)*
+* Quiz Page
+  <img width="1883" height="1026" alt="Screenshot 2026-04-23 203430" src="https://github.com/user-attachments/assets/dc7a663a-ddf6-4527-9196-1539fa3204ee" />
+
+* Result Page
+  <img width="1911" height="1007" alt="Screenshot 2026-04-23 204059" src="https://github.com/user-attachments/assets/98ae1775-fe5c-4b69-b90c-1770352d93fa" />
+
+* Admin Dashboard
+  <img width="1897" height="1000" alt="Screenshot 2026-04-23 203446" src="https://github.com/user-attachments/assets/e7d50ff8-bbb2-48b8-b650-358bac9edc12" />
+
 
 ---
 
@@ -178,7 +212,7 @@ GET    /api/admin/questions
 
 ## 🧠 Author
 
-**Ganesh Prasad**
+**Ganesh Prasad** - 
 CSE Engineering Student
 
 ---
