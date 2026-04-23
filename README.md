@@ -8,6 +8,16 @@
 
 ---
 
+## 🌐 Live Demo
+
+🚀 Frontend deployed on Vercel:
+
+👉 https://quiz-app-fullstack-lemon.vercel.app/
+
+> ⚠️ Note: Backend is running locally. Admin features and APIs may not work in the deployed version.
+
+---
+
 ## 📌 Project Overview
 
 This is a **full-stack interactive quiz application** developed using **React (Frontend)** and **Spring Boot (Backend)** with **MySQL database integration**.
