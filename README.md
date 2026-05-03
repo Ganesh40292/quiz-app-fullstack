@@ -358,7 +358,7 @@ While this project covers full-stack fundamentals, several enhancements are plan
 Passionate about building scalable backend systems, interactive web applications, and constantly exploring modern software architecture.
 
 * [GitHub Profile](https://github.com/Ganesh40292)
-* [LinkedIn](#) *(Add your link here)*
+* [LinkedIn](#) www.linkedin.com/in/ganeshprasad40292
 
 ---
 
