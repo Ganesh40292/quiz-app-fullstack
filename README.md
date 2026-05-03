@@ -215,6 +215,13 @@ quiz-app-fullstack/
 * Node.js 18+ & npm
 * MySQL 8.0+
 
+### Step 0: Clone the Repository
+Open your terminal and clone the repository to your local machine:
+```bash
+git clone https://github.com/Ganesh40292/quiz-app-fullstack.git
+cd quiz-app-fullstack
+```
+
 ### Step 1: Database Setup
 1. Open MySQL Workbench or your CLI.
 2. Run the following command: `CREATE DATABASE quizdb;`
