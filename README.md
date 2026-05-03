@@ -314,24 +314,30 @@ This project is configured to be seamlessly deployed across modern cloud provide
 
 ## 📸 Screenshots
 
-*(Replace the placeholder links below with actual image paths once deployed!)*
 
 <details>
   <summary><b>1. Login Authentication Portal</b></summary>
- <img width="1918" height="971" alt="image" src="https://github.com/user-attachments/assets/601c2784-9816-45ee-a3ff-b9ba2b9f9a21" />
-</details>  
+  <br>
+  <img src="<img width="1918" height="971" alt="image" src="https://github.com/user-attachments/assets/601c2784-9816-45ee-a3ff-b9ba2b9f9a21" />" alt="Login Page">
+</details>
+
 <details>
   <summary><b>2. Interactive Quiz Interface & Timer</b></summary>
-  <img width="1918" height="858" alt="image" src="https://github.com/user-attachments/assets/54d7299e-1c41-4036-b784-6a804036b06d" />
-</details>  
+  <br>
+  <img src=" <img width="1918" height="858" alt="image" src="https://github.com/user-attachments/assets/54d7299e-1c41-4036-b784-6a804036b06d" />" alt="Quiz Page">
+</details>
+
 <details>
   <summary><b>3. Admin Dashboard & CRUD Operations</b></summary>
-<img width="1918" height="873" alt="image" src="https://github.com/user-attachments/assets/78f27a4c-40b5-4ac6-b023-d680c9e34e51" />
-</details>  
+  <br>
+  <img src="<img width="1918" height="873" alt="image" src="https://github.com/user-attachments/assets/78f27a4c-40b5-4ac6-b023-d680c9e34e51" />" alt="Admin Dashboard">
+</details>
+
 <details>
   <summary><b>4. Real-time Results & Gamification</b></summary>
-<img width="1918" height="995" alt="image" src="https://github.com/user-attachments/assets/481c32eb-0c59-4179-b8e7-8c42ce1235ec" />
-</details>  
+  <br>
+  <img src="<img width="1918" height="995" alt="image" src="https://github.com/user-attachments/assets/481c32eb-0c59-4179-b8e7-8c42ce1235ec" />" alt="Results Page">
+</details>
 
 ---
 
