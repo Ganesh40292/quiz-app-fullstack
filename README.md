@@ -19,6 +19,19 @@
 
 ---
 
+## 🚀 Live Demo & Deployment Links
+Experience the live application right now!
+
+* 🌐 **Live Website (Frontend)**: [https://quiz-app-fullstack-liard.vercel.app](https://quiz-app-fullstack-liard.vercel.app)
+* ⚙️ **Live API (Backend)**: [https://quizapp-backend-04o9.onrender.com/api/admin/dashboard](https://quizapp-backend-04o9.onrender.com/api/admin/dashboard)
+* 🗄️ **Database**: Hosted on Railway (MySQL)
+
+**Test Credentials:**
+* **Admin**: `admin` / `Admin@123`
+* **User**: `user` / `User@123`
+
+---
+
 ## 📑 Table of Contents
 1. [Overview](#-overview)
 2. [Core Features](#-core-features)
