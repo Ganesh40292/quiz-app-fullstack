@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
 
 function Navbar() {
 
@@ -22,13 +23,17 @@ function Navbar() {
 
       {/* 🔵 BOLD LOGO */}
       <NavLink to="/" className="logo">
-        <b>Quiz App</b>
+        <b>🎯 Quiz App</b>
       </NavLink>
 
       <div className="nav-links">
 
         <NavLink to="/" className={getLinkClass}>
           Quiz
+        </NavLink>
+
+        <NavLink to="/leaderboard" className={getLinkClass}>
+          Leaderboard
         </NavLink>
 
         {isLoggedIn && role === "admin" && (
@@ -38,17 +43,25 @@ function Navbar() {
         )}
 
         {isLoggedIn && (
-          <span style={{ marginLeft: "15px", color: "#fff" }}>
-            👤 {username}
-          </span>
+          <NavLink to="/history" className={getLinkClass}>
+            My History
+          </NavLink>
         )}
+
+        {isLoggedIn && (
+          <NavLink to="/profile" className={getLinkClass} style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+            👤 {username}
+          </NavLink>
+        )}
+
+        <ThemeToggle />
 
         {!isLoggedIn ? (
           <NavLink to="/login" className={getLinkClass}>
             Login
           </NavLink>
         ) : (
-          <button className="btn btn-small" onClick={handleLogout}>
+          <button className="btn" style={{ margin: 0, padding: "8px 16px", fontSize: "14px" }} onClick={handleLogout}>
             Logout
           </button>
         )}

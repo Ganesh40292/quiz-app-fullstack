@@ -9,4 +9,6 @@ import com.quizapp.backend.model.Result;
 public interface ResultRepository extends JpaRepository<Result, Long> {
 
     List<Result> findByUserId(Long userId);
+
+    List<Result> findTop10ByOrderByScoreDesc();
 }

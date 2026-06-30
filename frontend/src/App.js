@@ -12,6 +12,11 @@ import ResultPage from "./pages/ResultPage";
 import AdminPage from "./pages/AdminPage";
 import LoginPage from "./pages/LoginPage";
 
+import RegisterPage from "./pages/RegisterPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
+import HistoryPage from "./pages/HistoryPage";
+import ProfilePage from "./pages/ProfilePage";
+
 function App() {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
@@ -38,11 +43,41 @@ function App() {
           }
         />
 
+        {/* 📝 REGISTER PAGE */}
+        <Route
+          path="/register"
+          element={
+            token ? <Navigate to="/" replace /> : <RegisterPage />
+          }
+        />
+
         {/* 🟡 RESULT (PROTECTED) */}
         <Route
           path="/result"
           element={
             token ? <ResultPage /> : <Navigate to="/login" replace />
+          }
+        />
+
+        {/* 🏆 LEADERBOARD */}
+        <Route
+          path="/leaderboard"
+          element={<LeaderboardPage />}
+        />
+
+        {/* 👤 MY HISTORY (PROTECTED) */}
+        <Route
+          path="/history"
+          element={
+            token ? <HistoryPage /> : <Navigate to="/login" replace />
+          }
+        />
+
+        {/* 👤 USER PROFILE (PROTECTED) */}
+        <Route
+          path="/profile"
+          element={
+            token ? <ProfilePage /> : <Navigate to="/login" replace />
           }
         />
 

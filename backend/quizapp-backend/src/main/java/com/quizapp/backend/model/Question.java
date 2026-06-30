@@ -35,19 +35,28 @@ public class Question {
     @Column(name = "correct_answer", nullable = false)
     private String correctAnswer;
 
+    @Column(name = "category")
+    private String category;
+
+    @Column(name = "difficulty")
+    private String difficulty;
+
     /* =========================
        CONSTRUCTORS
     ========================= */
     public Question() {}
 
     public Question(String question, String optionA, String optionB,
-                    String optionC, String optionD, String correctAnswer) {
+                    String optionC, String optionD, String correctAnswer,
+                    String category, String difficulty) {
         this.question = question;
         this.optionA = optionA;
         this.optionB = optionB;
         this.optionC = optionC;
         this.optionD = optionD;
         this.correctAnswer = correctAnswer;
+        this.category = category;
+        this.difficulty = difficulty;
     }
 
     /* =========================
@@ -58,7 +67,6 @@ public class Question {
         return id;
     }
 
-    // ✅ REQUIRED for update API
     public void setId(Long id) {
         this.id = id;
     }
@@ -109,5 +117,21 @@ public class Question {
 
     public void setCorrectAnswer(String correctAnswer) {
         this.correctAnswer = correctAnswer;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(String difficulty) {
+        this.difficulty = difficulty;
     }
 }

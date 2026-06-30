@@ -104,7 +104,11 @@ function LoginPage() {
 
         {/* 🔹 Helper text */}
         <p style={{ marginTop: "10px", fontSize: "13px", opacity: 0.7 }}>
-          Use admin / user credentials
+          Use admin / user credentials or register a new one.
+        </p>
+
+        <p style={{ marginTop: "15px", fontSize: "14px", cursor: "pointer", opacity: 0.8 }} onClick={() => window.location.href = "/register"}>
+          Need an account? Register here.
         </p>
 
       </div>

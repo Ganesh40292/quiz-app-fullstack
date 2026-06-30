@@ -17,6 +17,11 @@ public interface QuestionService {
     List<Question> getAllQuestions();
 
     /* =========================
+       GET FILTERED QUESTIONS
+    ========================= */
+    List<Question> getFilteredQuestions(String category, String difficulty);
+
+    /* =========================
        DELETE QUESTION
     ========================= */
     void deleteQuestion(Long id);
@@ -25,4 +30,9 @@ public interface QuestionService {
        GET QUESTION BY ID (for edit support)
     ========================= */
     Question getQuestionById(Long id);
+
+    /* =========================
+       GET PAGINATED QUESTIONS
+    ========================= */
+    org.springframework.data.domain.Page<Question> getAllQuestionsPaginated(org.springframework.data.domain.Pageable pageable);
 }

@@ -25,7 +25,13 @@ public class AdminController {
        GET ALL QUESTIONS
     ========================= */
     @GetMapping("/questions")
-    public List<Question> getAllQuestions() {
+    public Object getAllQuestions(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+            return questionService.getAllQuestionsPaginated(pageable);
+        }
         return questionService.getAllQuestions();
     }
 
@@ -33,14 +39,7 @@ public class AdminController {
        ADD QUESTION (ADMIN ONLY)
     ========================= */
     @PostMapping("/add")
-    public Question addQuestion(
-            @RequestHeader("role") String role,
-            @RequestBody Question question) {
-
-        if (!"admin".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Access Denied ❌");
-        }
-
+    public Question addQuestion(@RequestBody Question question) {
         return questionService.addQuestion(question);
     }
 
@@ -49,14 +48,8 @@ public class AdminController {
     ========================= */
     @PutMapping("/update/{id}")
     public Question updateQuestion(
-            @RequestHeader("role") String role,
             @PathVariable Long id,
             @RequestBody Question updatedQuestion) {
-
-        if (!"admin".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Access Denied ❌");
-        }
-
         updatedQuestion.setId(id);
         return questionService.addQuestion(updatedQuestion);
     }
@@ -65,14 +58,7 @@ public class AdminController {
        DELETE QUESTION (ADMIN ONLY)
     ========================= */
     @DeleteMapping("/delete/{id}")
-    public String deleteQuestion(
-            @RequestHeader("role") String role,
-            @PathVariable Long id) {
-
-        if (!"admin".equalsIgnoreCase(role)) {
-            throw new RuntimeException("Access Denied ❌");
-        }
-
+    public String deleteQuestion(@PathVariable Long id) {
         questionService.deleteQuestion(id);
         return "Question deleted successfully";
     }

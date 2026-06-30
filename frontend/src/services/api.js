@@ -10,11 +10,19 @@ const getAuthHeaders = () => ({
 });
 
 /* =========================
-   GET ALL QUESTIONS
+   GET ALL / FILTERED QUESTIONS
 ========================= */
-export const getQuestions = async () => {
+export const getQuestions = async (category = "", difficulty = "") => {
   try {
-    const res = await fetch(`${BASE_URL}/quiz/questions`);
+    let url = `${BASE_URL}/quiz/questions`;
+    const params = [];
+    if (category) params.push(`category=${encodeURIComponent(category)}`);
+    if (difficulty) params.push(`difficulty=${encodeURIComponent(difficulty)}`);
+    if (params.length) {
+      url += `?${params.join("&")}`;
+    }
+    
+    const res = await fetch(url);
 
     if (!res.ok) throw new Error("Failed to fetch questions");
 
@@ -26,15 +34,26 @@ export const getQuestions = async () => {
 };
 
 /* =========================
+   REGISTER USER
+========================= */
+export const registerUser = async (data) => {
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+  const res = await fetch(`${API_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return await res.json();
+};
+
+/* =========================
    SUBMIT QUIZ
 ========================= */
 export const submitQuiz = async (answers) => {
   try {
     const res = await fetch(`${BASE_URL}/quiz/submit`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify(answers),
     });
 
@@ -44,6 +63,33 @@ export const submitQuiz = async (answers) => {
   } catch (error) {
     console.error("Error submitting quiz:", error);
     return { score: 0, total: 0 };
+  }
+};
+
+/* =========================
+   GAMIFICATION APIs
+========================= */
+export const getLeaderboard = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/quiz/leaderboard`, {
+      headers: getAuthHeaders(),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+};
+
+export const getUserHistory = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/quiz/history`, {
+      headers: getAuthHeaders(),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error(err);
+    return [];
   }
 };
 
@@ -81,4 +127,17 @@ export const deleteQuestion = async (id) => {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
+};
+
+export const getAdminQuestionsPaginated = async (page, size) => {
+  try {
+    const res = await fetch(`${BASE_URL}/admin/questions?page=${page}&size=${size}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch paginated questions");
+    return await res.json();
+  } catch (error) {
+    console.error(error);
+    return { content: [], totalPages: 0 };
+  }
 };

@@ -6,8 +6,12 @@ function QuestionCard({
   index,
   selectedAnswers,
   setSelectedAnswers,
+  practiceMode = false,
 }) {
+  const answered = selectedAnswers[question.id] !== undefined;
+
   const handleChange = (option) => {
+    if (practiceMode && answered) return;
     setSelectedAnswers((prev) => ({
       ...prev,
       [question.id]: option,
@@ -23,13 +27,29 @@ function QuestionCard({
 
       {/* 🔵 Options */}
       {["A", "B", "C", "D"].map((opt) => {
-        const isSelected = selectedAnswers[question.id] === opt;
+        const selectedOpt = selectedAnswers[question.id];
+        const isSelected = selectedOpt === opt;
         const optionText = question[`option${opt}`];
+
+        let className = "option";
+        if (practiceMode && answered) {
+          if (opt === question.correctAnswer) {
+            className += " correct";
+          } else if (isSelected) {
+            className += " wrong";
+          }
+        } else if (isSelected) {
+          className += " selected";
+        }
 
         return (
           <label
             key={opt}
-            className={`option ${isSelected ? "selected" : ""}`}
+            className={className}
+            style={{
+              cursor: (practiceMode && answered) ? "not-allowed" : "pointer",
+              opacity: (practiceMode && answered && !isSelected && opt !== question.correctAnswer) ? 0.65 : 1
+            }}
           >
             {/* Radio */}
             <input
@@ -37,7 +57,9 @@ function QuestionCard({
               name={`question-${question.id}`}
               value={opt}
               checked={isSelected}
+              disabled={practiceMode && answered}
               onChange={() => handleChange(opt)}
+              style={{ display: "none" }} // Hide the radio button for cleaner glassmorphic UI
             />
 
             {/* Text */}

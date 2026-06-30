@@ -32,6 +32,22 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     /* =========================
+       GET FILTERED QUESTIONS
+    ========================= */
+    @Override
+    public List<Question> getFilteredQuestions(String category, String difficulty) {
+        if (category != null && !category.isEmpty() && difficulty != null && !difficulty.isEmpty()) {
+            return questionRepository.findByCategoryAndDifficulty(category, difficulty);
+        } else if (category != null && !category.isEmpty()) {
+            return questionRepository.findByCategory(category);
+        } else if (difficulty != null && !difficulty.isEmpty()) {
+            return questionRepository.findByDifficulty(difficulty);
+        } else {
+            return questionRepository.findAll();
+        }
+    }
+
+    /* =========================
        DELETE QUESTION
     ========================= */
     @Override
@@ -49,5 +65,13 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public Question getQuestionById(Long id) {
         return questionRepository.findById(id).orElse(null);
+    }
+
+    /* =========================
+       GET PAGINATED QUESTIONS
+    ========================= */
+    @Override
+    public org.springframework.data.domain.Page<Question> getAllQuestionsPaginated(org.springframework.data.domain.Pageable pageable) {
+        return questionRepository.findAll(pageable);
     }
 }
