@@ -57,6 +57,23 @@ export const registerUser = async (data) => {
 };
 
 /* =========================
+   GOOGLE OAUTH LOGIN
+========================= */
+export const googleLogin = async (data) => {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch (error) {
+    console.error("Error with Google login:", error);
+    return { status: "fail", message: "Network error with Google authentication" };
+  }
+};
+
+/* =========================
    SUBMIT QUIZ
 ========================= */
 export const submitQuiz = async (answers) => {

@@ -96,4 +96,46 @@ public class AuthController {
         res.put("message", "User registered successfully");
         return res;
     }
+
+    @PostMapping("/google")
+    public Map<String, Object> googleAuth(@RequestBody Map<String, String> req) {
+        String email = req.get("email");
+        String name = req.get("name");
+
+        Map<String, Object> res = new HashMap<>();
+
+        if (email == null || email.trim().isEmpty()) {
+            res.put("status", "fail");
+            res.put("message", "Email is required for Google Authentication");
+            return res;
+        }
+
+        // Derive username from name or email
+        String username = (name != null && !name.trim().isEmpty())
+            ? name.trim().replaceAll("\\s+", "")
+            : email.split("@")[0];
+
+        // Check if user already exists
+        Optional<User> existingUser = userRepository.findByUsername(username);
+        User user;
+
+        if (existingUser.isPresent()) {
+            user = existingUser.get();
+        } else {
+            // Auto-create new Google User
+            user = new User();
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode("GOOGLE_OAUTH_" + System.currentTimeMillis()));
+            user.setRole("USER");
+            userRepository.save(user);
+        }
+
+        res.put("status", "success");
+        res.put("role", user.getRole());
+        res.put("token", jwtUtil.generateToken(user.getUsername()));
+        res.put("username", user.getUsername());
+        res.put("email", user.getEmail());
+        return res;
+    }
 }
