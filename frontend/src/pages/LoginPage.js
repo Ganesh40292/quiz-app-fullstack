@@ -49,8 +49,28 @@ function LoginPage() {
     }
   };
 
+  /* =========================
+     GOOGLE OAUTH HANDLER & CLICK
+  ========================= */
+  const handleGoogleClick = () => {
+    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
+    
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleResponse
+        });
+        window.google.accounts.id.prompt();
+      } catch (err) {
+        console.error("Google SDK error:", err);
+      }
+    } else {
+      alert("Google Sign-In service is loading. Please click again in 2 seconds.");
+    }
+  };
+
   useEffect(() => {
-    /* Initialize Google SDK once on mount */
     const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
     if (window.google?.accounts?.id) {
       try {
@@ -180,11 +200,7 @@ function LoginPage() {
         <button
           type="button"
           className="liquid-glass hover:scale-[1.02]"
-          onClick={() => {
-            if (window.google?.accounts?.id) {
-              window.google.accounts.id.prompt();
-            }
-          }}
+          onClick={handleGoogleClick}
           style={{
             width: "100%",
             borderRadius: "9999px",
