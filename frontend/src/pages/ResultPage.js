@@ -1,29 +1,48 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import Button from "../components/Button";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
+import CertificateModal from "../components/CertificateModal";
+import { soundFx } from "../utils/audio";
 
 function ResultPage({ score, total, restartQuiz, questions, selectedAnswers }) {
   const { width, height } = useWindowSize();
+  const [showCert, setShowCert] = useState(false);
 
   const percentage = total ? Math.round((score / total) * 100) : 0;
+
+  useEffect(() => {
+    if (percentage >= 80) {
+      soundFx.playFanfare();
+    }
+  }, [percentage]);
 
   /* =========================
      MESSAGE LOGIC
   ========================= */
   let message = "";
-  if (percentage === 100) message = "Excellent 🎉";
+  if (percentage === 100) message = "Perfect Score! Master Class! 🏆";
+  else if (percentage >= 80) message = "Outstanding Performance! 🌟";
   else if (percentage >= 60) message = "Great Job 👍";
   else if (percentage >= 40) message = "Good Effort 🙂";
-  else message = "Try Again 💡";
+  else message = "Keep Practicing 💡";
 
   return (
     <div className="container">
 
-      {/* 🎉 CONFETTI (only if good score) */}
-      {percentage >= 60 && (
-        <Confetti width={width} height={height} />
+      {/* 🎉 CONFETTI (only for high scores >= 80%) */}
+      {percentage >= 80 && (
+        <Confetti width={width} height={height} numberOfPieces={350} recycle={false} />
+      )}
+
+      {/* 📜 CERTIFICATE MODAL */}
+      {showCert && (
+        <CertificateModal
+          score={score}
+          total={total}
+          onClose={() => setShowCert(false)}
+        />
       )}
 
       <h1>Quiz Result</h1>
@@ -31,8 +50,10 @@ function ResultPage({ score, total, restartQuiz, questions, selectedAnswers }) {
       {/* 🔥 SCORE CARD */}
       <div className="card" style={{ textAlign: "center" }}>
         <h2>Your Score: {score} / {total}</h2>
-        <h3>{percentage}%</h3>
-        <h3>{message}</h3>
+        <h3 style={{ fontSize: "2.5rem", color: percentage >= 80 ? "#00ff88" : percentage >= 60 ? "#00c6ff" : "#ff4d6d", margin: "8px 0" }}>
+          {percentage}%
+        </h3>
+        <h3 style={{ marginBottom: "16px" }}>{message}</h3>
 
         {/* 📊 PROGRESS */}
         <div className="progress-container">
@@ -41,12 +62,36 @@ function ResultPage({ score, total, restartQuiz, questions, selectedAnswers }) {
             style={{
               width: `${percentage}%`,
               background:
-                percentage >= 60
+                percentage >= 80
+                  ? "linear-gradient(90deg, #00c6ff, #00ff88)"
+                  : percentage >= 60
                   ? "linear-gradient(90deg, #28a745, #00ff88)"
                   : "linear-gradient(90deg, #dc3545, #ff4d6d)",
             }}
           ></div>
         </div>
+
+        {/* 📜 CERTIFICATE DOWNLOAD BUTTON FOR >= 80% */}
+        {percentage >= 80 && (
+          <button
+            className="liquid-glass hover:scale-[1.03]"
+            onClick={() => setShowCert(true)}
+            style={{
+              marginTop: "24px",
+              padding: "14px 36px",
+              borderRadius: "9999px",
+              border: "none",
+              background: "linear-gradient(90deg, #00c6ff, #00ff88)",
+              color: "#ffffff",
+              fontWeight: "600",
+              fontSize: "1rem",
+              cursor: "pointer",
+              boxShadow: "0 0 25px rgba(0, 255, 136, 0.4)"
+            }}
+          >
+            📜 View Certificate of Excellence
+          </button>
+        )}
       </div>
 
       {/* 🔍 ANSWER REVIEW */}

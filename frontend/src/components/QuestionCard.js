@@ -7,6 +7,8 @@ function QuestionCard({
   selectedAnswers,
   setSelectedAnswers,
   practiceMode = false,
+  isFlagged = false,
+  onToggleFlag,
 }) {
   const answered = selectedAnswers[question.id] !== undefined;
 
@@ -19,11 +21,37 @@ function QuestionCard({
   };
 
   return (
-    <div className="card">
-      {/* 🟢 Question */}
-      <h3>
-        {index + 1}. {question.question}
-      </h3>
+    <div className="card" style={{ position: "relative" }}>
+      {/* 🟢 Question Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "16px" }}>
+        <h3 style={{ margin: 0, flex: 1 }}>
+          {index + 1}. {question.question}
+        </h3>
+
+        {onToggleFlag && (
+          <button
+            type="button"
+            onClick={() => onToggleFlag(question.id)}
+            title={isFlagged ? "Unflag Question" : "Flag Question for Review"}
+            style={{
+              background: isFlagged ? "rgba(255, 183, 0, 0.2)" : "rgba(255, 255, 255, 0.05)",
+              border: `1px solid ${isFlagged ? "#ffb700" : "rgba(255, 255, 255, 0.15)"}`,
+              color: isFlagged ? "#ffb700" : "#a1a1aa",
+              padding: "6px 12px",
+              borderRadius: "12px",
+              fontSize: "0.8rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              transition: "all 0.2s ease"
+            }}
+          >
+            🚩 {isFlagged ? "Flagged" : "Flag"}
+          </button>
+        )}
+      </div>
 
       {/* 🔵 Options */}
       {["A", "B", "C", "D"].map((opt) => {

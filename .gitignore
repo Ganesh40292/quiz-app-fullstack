@@ -30,6 +30,11 @@ Thumbs.db
 .idea/
 
 # =========================
-# ENV FILES (IMPORTANT)
+# ENV & SECRET FILES (IMPORTANT)
 # =========================
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+PROJECT_SECRETS_AND_KEYS.txt

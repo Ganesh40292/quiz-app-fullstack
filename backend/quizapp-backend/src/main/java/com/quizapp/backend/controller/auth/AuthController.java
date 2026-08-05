@@ -60,6 +60,13 @@ public class AuthController {
     public Map<String, Object> register(@RequestBody User user) {
         Map<String, Object> res = new HashMap<>();
 
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty() ||
+            user.getPassword() == null || user.getPassword().trim().isEmpty()) {
+            res.put("status", "fail");
+            res.put("message", "Username and password are required");
+            return res;
+        }
+
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             res.put("status", "fail");
             res.put("message", "Username already exists");
@@ -69,9 +76,18 @@ public class AuthController {
         // Hash password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         
-        // Default role is "user" unless explicitly passed as "admin"
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            user.setRole("user");
+        // Assign role (ADMIN if specified or if username starts with 'admin', otherwise USER)
+        if (user.getRole() != null && user.getRole().equalsIgnoreCase("ADMIN")) {
+            user.setRole("ADMIN");
+        } else if (user.getUsername() != null && user.getUsername().toLowerCase().startsWith("admin")) {
+            user.setRole("ADMIN");
+        } else {
+            user.setRole("USER");
+        }
+
+        // Default email if not provided (satisfy DB NOT NULL constraint)
+        if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
+            user.setEmail(user.getUsername().toLowerCase().replaceAll("\\s+", "") + "@gmail.com");
         }
 
         userRepository.save(user);

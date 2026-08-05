@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ShaderBackground from "../components/ShaderBackground";
 
 function LoginPage() {
   const [form, setForm] = useState({
@@ -73,10 +74,30 @@ function LoginPage() {
      UI
   ========================= */
   return (
-    <div className="login-wrapper">
-      <div className="login-box">
+    <div className="login-wrapper" style={{ position: "relative", minHeight: "90vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {/* 🌌 WEBGL ANIMATED SHADER BACKGROUND */}
+      <ShaderBackground />
 
-        <h1 className="login-title">🔐 Login</h1>
+      {/* 🔐 GLASSMORPHIC LOGIN CARD */}
+      <div
+        className="login-box liquid-glass animate-fade-rise"
+        style={{
+          position: "relative",
+          zIndex: 10,
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          background: "rgba(15, 23, 42, 0.65)",
+          border: "1px solid rgba(255, 255, 255, 0.15)",
+          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2)",
+          borderRadius: "24px",
+          padding: "40px 36px",
+          width: "100%",
+          maxWidth: "420px"
+        }}
+      >
+        <h1 className="login-title" style={{ fontFamily: "'Outfit', sans-serif", fontSize: "2rem", fontWeight: "700", letterSpacing: "-0.5px", marginBottom: "24px", color: "#ffffff" }}>
+          🔐 Login to Quizora
+        </h1>
 
         <input
           type="text"
@@ -95,22 +116,25 @@ function LoginPage() {
         />
 
         <button
-          className="btn"
+          className="btn liquid-glass hover:scale-[1.03]"
           onClick={handleLogin}
           disabled={loading}
+          style={{ width: "100%", marginTop: "15px", borderRadius: "9999px", padding: "14px", fontSize: "1rem", fontWeight: "500", cursor: "pointer" }}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
 
         {/* 🔹 Helper text */}
-        <p style={{ marginTop: "10px", fontSize: "13px", opacity: 0.7 }}>
+        <p style={{ marginTop: "16px", fontSize: "13px", color: "#a1a1aa" }}>
           Use admin / user credentials or register a new one.
         </p>
 
-        <p style={{ marginTop: "15px", fontSize: "14px", cursor: "pointer", opacity: 0.8 }} onClick={() => window.location.href = "/register"}>
-          Need an account? Register here.
+        <p
+          style={{ marginTop: "16px", fontSize: "14px", cursor: "pointer", color: "#00c6ff", fontWeight: "500" }}
+          onClick={() => window.location.href = "/register"}
+        >
+          Need an account? Register here →
         </p>
-
       </div>
     </div>
   );

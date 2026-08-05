@@ -37,13 +37,23 @@ export const getQuestions = async (category = "", difficulty = "") => {
    REGISTER USER
 ========================= */
 export const registerUser = async (data) => {
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
-  const res = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  return await res.json();
+  try {
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { status: "fail", message: res.ok ? "Registration succeeded" : `Server error (${res.status})` };
+    }
+  } catch (error) {
+    console.error("Error registering user:", error);
+    return { status: "fail", message: "Network error or backend not reachable" };
+  }
 };
 
 /* =========================

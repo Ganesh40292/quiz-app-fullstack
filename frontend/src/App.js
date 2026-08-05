@@ -16,38 +16,72 @@ import RegisterPage from "./pages/RegisterPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import HistoryPage from "./pages/HistoryPage";
 import ProfilePage from "./pages/ProfilePage";
+import HelpPage from "./pages/HelpPage";
+
+/* =========================
+   PROTECTED ROUTE WRAPPER
+   Reads auth state on EVERY render so the
+   browser back-button never forces a logout.
+========================= */
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const token = localStorage.getItem("token");
+  const role = (localStorage.getItem("role") || "").toLowerCase();
+  if (!token || role !== "admin") {
+    return <Navigate to="/login" />;
+  }
+  return children;
+}
+
+function GuestRoute({ children }) {
+  const token = localStorage.getItem("token");
+  if (token) {
+    return <Navigate to="/" />;
+  }
+  return children;
+}
 
 function App() {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
-
   return (
     <Router>
       <Navbar />
 
       <Routes>
 
-        {/* 🔐 LOGIN FIRST */}
+        {/* 🔐 HOME — Quiz (Protected) */}
         <Route
           path="/"
           element={
-            token ? <QuizPage /> : <Navigate to="/login" replace />
+            <ProtectedRoute>
+              <QuizPage />
+            </ProtectedRoute>
           }
         />
 
-        {/* 🔐 LOGIN PAGE */}
+        {/* 🔐 LOGIN PAGE (Guest Only) */}
         <Route
           path="/login"
           element={
-            token ? <Navigate to="/" replace /> : <LoginPage />
+            <GuestRoute>
+              <LoginPage />
+            </GuestRoute>
           }
         />
 
-        {/* 📝 REGISTER PAGE */}
+        {/* 📝 REGISTER PAGE (Guest Only) */}
         <Route
           path="/register"
           element={
-            token ? <Navigate to="/" replace /> : <RegisterPage />
+            <GuestRoute>
+              <RegisterPage />
+            </GuestRoute>
           }
         />
 
@@ -55,11 +89,13 @@ function App() {
         <Route
           path="/result"
           element={
-            token ? <ResultPage /> : <Navigate to="/login" replace />
+            <ProtectedRoute>
+              <ResultPage />
+            </ProtectedRoute>
           }
         />
 
-        {/* 🏆 LEADERBOARD */}
+        {/* 🏆 LEADERBOARD (Public) */}
         <Route
           path="/leaderboard"
           element={<LeaderboardPage />}
@@ -69,7 +105,9 @@ function App() {
         <Route
           path="/history"
           element={
-            token ? <HistoryPage /> : <Navigate to="/login" replace />
+            <ProtectedRoute>
+              <HistoryPage />
+            </ProtectedRoute>
           }
         />
 
@@ -77,17 +115,29 @@ function App() {
         <Route
           path="/profile"
           element={
-            token ? <ProfilePage /> : <Navigate to="/login" replace />
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
           }
         />
 
-        {/* 🔴 ADMIN */}
+        {/* ❓ HELP & CONTACT (PROTECTED) */}
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <HelpPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 🔴 ADMIN (Admin Only) */}
         <Route
           path="/admin"
           element={
-            token && role === "admin"
-              ? <AdminPage />
-              : <Navigate to="/login" replace />
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
           }
         />
 
