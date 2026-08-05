@@ -50,9 +50,9 @@ function LoginPage() {
   };
 
   useEffect(() => {
-    /* Initialize Google SDK only if valid Client ID is present */
-    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
-    if (clientId && clientId !== "undefined" && window.google?.accounts?.id) {
+    /* Initialize Google SDK once on mount */
+    const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
+    if (window.google?.accounts?.id) {
       try {
         window.google.accounts.id.initialize({
           client_id: clientId,
@@ -181,12 +181,7 @@ function LoginPage() {
           type="button"
           className="liquid-glass hover:scale-[1.02]"
           onClick={() => {
-            const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
             if (window.google?.accounts?.id) {
-              window.google.accounts.id.initialize({
-                client_id: clientId,
-                callback: handleGoogleResponse
-              });
               window.google.accounts.id.prompt();
             }
           }}
