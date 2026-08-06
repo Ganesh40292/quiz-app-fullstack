@@ -18,12 +18,7 @@ function HelpPage() {
       return;
     }
 
-    const accessKey = process.env.REACT_APP_WEB3FORMS_ACCESS_KEY || process.env.REACT_APP_WEB3FORMS_KEY;
-
-    if (!accessKey || accessKey === "YOUR_WEB3FORMS_ACCESS_KEY") {
-      addToast("Web3Forms Access Key is not configured. Please add REACT_APP_WEB3FORMS_ACCESS_KEY in Vercel / .env", "error");
-      return;
-    }
+    const accessKey = process.env.REACT_APP_WEB3FORMS_ACCESS_KEY || process.env.REACT_APP_WEB3FORMS_KEY || "1dd4eaeb-c34a-43de-9ea2-4a5b8fcf933b";
 
     try {
       setSending(true);
