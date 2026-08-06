@@ -18,7 +18,12 @@ function HelpPage() {
       return;
     }
 
-    const accessKey = process.env.REACT_APP_WEB3FORMS_KEY || "YOUR_WEB3FORMS_ACCESS_KEY";
+    const accessKey = process.env.REACT_APP_WEB3FORMS_ACCESS_KEY || process.env.REACT_APP_WEB3FORMS_KEY;
+
+    if (!accessKey || accessKey === "YOUR_WEB3FORMS_ACCESS_KEY") {
+      addToast("Web3Forms Access Key is not configured. Please add REACT_APP_WEB3FORMS_ACCESS_KEY in Vercel / .env", "error");
+      return;
+    }
 
     try {
       setSending(true);
@@ -32,9 +37,9 @@ function HelpPage() {
           access_key: accessKey,
           name: form.name,
           email: form.email,
-          subject: `[Quizora Help] ${form.subject || "Support Inquiry"}`,
+          subject: `[Quizora Support] ${form.subject || "General Inquiry"}`,
           message: form.message,
-          from_name: "Quizora Help Portal"
+          from_name: "Quizora Interactive Portal"
         })
       });
 
@@ -42,10 +47,10 @@ function HelpPage() {
 
       if (data.success) {
         setSubmitted(true);
-        addToast("Your message has been sent directly to admin Gmail!", "success");
+        addToast("Your message has been sent directly to admin email!", "success");
       } else {
         console.error("Web3Forms error:", data);
-        addToast(data.message || "Failed to send message. Please check Access Key.", "error");
+        addToast(data.message || "Failed to send message. Please verify your Web3Forms Access Key.", "error");
       }
     } catch (err) {
       console.error("Network error:", err);
