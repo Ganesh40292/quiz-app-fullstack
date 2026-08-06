@@ -13,10 +13,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.quizapp.backend.model.User;
 import com.quizapp.backend.repository.UserRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin("*")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -110,22 +115,38 @@ public class AuthController {
             return res;
         }
 
-        // Derive username from name or email
-        String username = (name != null && !name.trim().isEmpty())
-            ? name.trim().replaceAll("\\s+", "")
-            : email.split("@")[0];
+        String cleanEmail = email.trim().toLowerCase();
 
-        // Check if user already exists
-        Optional<User> existingUser = userRepository.findByUsername(username);
+        // 1. Check if user already exists by Email
+        Optional<User> existingUser = userRepository.findAll().stream()
+                .filter(u -> u.getEmail() != null && cleanEmail.equalsIgnoreCase(u.getEmail().trim()))
+                .findFirst();
+
         User user;
 
         if (existingUser.isPresent()) {
             user = existingUser.get();
         } else {
+            // 2. Derive sanitized base username from name or email
+            String baseUsername = (name != null && !name.trim().isEmpty())
+                    ? name.trim().replaceAll("[^a-zA-Z0-9]", "")
+                    : cleanEmail.split("@")[0].replaceAll("[^a-zA-Z0-9]", "");
+
+            if (baseUsername.isEmpty()) {
+                baseUsername = "googleuser";
+            }
+
+            // 3. Ensure unique username in database
+            String finalUsername = baseUsername;
+            int counter = 1;
+            while (userRepository.findByUsername(finalUsername).isPresent()) {
+                finalUsername = baseUsername + counter++;
+            }
+
             // Auto-create new Google User
             user = new User();
-            user.setUsername(username);
-            user.setEmail(email);
+            user.setUsername(finalUsername);
+            user.setEmail(cleanEmail);
             user.setPassword(passwordEncoder.encode("GOOGLE_OAUTH_" + System.currentTimeMillis()));
             user.setRole("USER");
             userRepository.save(user);

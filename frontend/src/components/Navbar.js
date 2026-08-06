@@ -75,6 +75,7 @@ function Navbar() {
             const muted = soundFx.toggleMute();
             setSoundMuted(muted);
           }}
+          aria-label={soundMuted ? "Unmute Audio Effects" : "Mute Audio Effects"}
           title={soundMuted ? "Unmute Audio Effects" : "Mute Audio Effects"}
           style={{
             background: "transparent",
@@ -116,4 +117,4 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default React.memo(Navbar);

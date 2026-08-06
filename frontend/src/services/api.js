@@ -1,13 +1,31 @@
 const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
 
 /* =========================
-   COMMON HEADERS (IMPORTANT)
+   AUTH HELPER & HEADERS
 ========================= */
-const getAuthHeaders = () => ({
-  "Content-Type": "application/json",
-  "role": localStorage.getItem("role"),
-  "Authorization": `Bearer ${localStorage.getItem("token")}`
-});
+const checkAuthStatus = (res) => {
+  if (res && (res.status === 401 || res.status === 403)) {
+    console.warn("[API] Auth token expired or invalid (HTTP " + res.status + "). Clearing session.");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
+      window.location.href = "/login";
+    }
+  }
+};
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role");
+  const headers = { "Content-Type": "application/json" };
+  if (role) headers["role"] = role;
+  if (token && token !== "undefined" && token !== "null") {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 /* =========================
    GET ALL / FILTERED QUESTIONS
@@ -84,6 +102,7 @@ export const submitQuiz = async (answers) => {
       body: JSON.stringify(answers),
     });
 
+    checkAuthStatus(res);
     if (!res.ok) throw new Error("Failed to submit quiz");
 
     return await res.json();
@@ -101,6 +120,7 @@ export const getLeaderboard = async () => {
     const res = await fetch(`${BASE_URL}/quiz/leaderboard`, {
       headers: getAuthHeaders(),
     });
+    checkAuthStatus(res);
     return await res.json();
   } catch (err) {
     console.error(err);
@@ -113,6 +133,7 @@ export const getUserHistory = async () => {
     const res = await fetch(`${BASE_URL}/quiz/history`, {
       headers: getAuthHeaders(),
     });
+    checkAuthStatus(res);
     return await res.json();
   } catch (err) {
     console.error(err);
@@ -134,26 +155,29 @@ export const getStats = async () => {
 };
 
 export const addQuestion = async (data) => {
-  await fetch(`${BASE_URL}/admin/add`, {
+  const res = await fetch(`${BASE_URL}/admin/add`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
+  checkAuthStatus(res);
 };
 
 export const updateQuestion = async (id, data) => {
-  await fetch(`${BASE_URL}/admin/update/${id}`, {
+  const res = await fetch(`${BASE_URL}/admin/update/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
+  checkAuthStatus(res);
 };
 
 export const deleteQuestion = async (id) => {
-  await fetch(`${BASE_URL}/admin/delete/${id}`, {
+  const res = await fetch(`${BASE_URL}/admin/delete/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
+  checkAuthStatus(res);
 };
 
 export const getAdminQuestionsPaginated = async (page, size) => {
@@ -161,6 +185,7 @@ export const getAdminQuestionsPaginated = async (page, size) => {
     const res = await fetch(`${BASE_URL}/admin/questions?page=${page}&size=${size}`, {
       headers: getAuthHeaders(),
     });
+    checkAuthStatus(res);
     if (!res.ok) throw new Error("Failed to fetch paginated questions");
     return await res.json();
   } catch (error) {

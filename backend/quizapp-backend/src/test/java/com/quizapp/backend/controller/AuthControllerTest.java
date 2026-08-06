@@ -60,15 +60,12 @@ public class AuthControllerTest {
         when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
-        User newUser = new User();
-        newUser.setUsername("testuser");
-        newUser.setEmail("testuser@gmail.com");
-        newUser.setPassword("rawPassword");
+        String jsonPayload = "{\"username\":\"testuser\",\"email\":\"testuser@gmail.com\",\"password\":\"rawPassword\"}";
 
         mockMvc.perform(post("/api/auth/register")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(newUser)))
+                .content(jsonPayload))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("success"))
                 .andExpect(jsonPath("$.message").value("User registered successfully"));

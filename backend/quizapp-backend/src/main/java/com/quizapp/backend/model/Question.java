@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
 @Entity
-@Table(name = "questions")
+@Table(name = "questions", indexes = {
+    @Index(name = "idx_question_category", columnList = "category"),
+    @Index(name = "idx_question_difficulty", columnList = "difficulty")
+})
 public class Question {
 
     @Id

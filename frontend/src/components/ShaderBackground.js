@@ -169,6 +169,11 @@ function ShaderBackground() {
     const startTime = Date.now();
 
     const render = () => {
+      if (document.hidden) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+
       const currentTime = (Date.now() - startTime) / 1000;
 
       gl.clearColor(0, 0, 0, 1);
@@ -186,9 +191,19 @@ function ShaderBackground() {
       animId = requestAnimationFrame(render);
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animId);
+      } else {
+        animId = requestAnimationFrame(render);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     animId = requestAnimationFrame(render);
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animId);
       gl.deleteProgram(shaderProgram);

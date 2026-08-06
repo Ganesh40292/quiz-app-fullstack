@@ -167,6 +167,8 @@ function LoginPage() {
         <input
           type="text"
           name="username"
+          aria-label="Username"
+          autoComplete="username"
           placeholder="Enter Username"
           value={form.username}
           onChange={handleChange}
@@ -175,6 +177,8 @@ function LoginPage() {
         <input
           type="password"
           name="password"
+          aria-label="Password"
+          autoComplete="current-password"
           placeholder="Enter Password"
           value={form.password}
           onChange={handleChange}

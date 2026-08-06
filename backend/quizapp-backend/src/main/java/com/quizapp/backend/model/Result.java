@@ -7,8 +7,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import jakarta.persistence.Index;
+
 @Entity
-@Table(name = "results")
+@Table(name = "results", indexes = {
+    @Index(name = "idx_result_user", columnList = "user_id")
+})
 public class Result {
 
     @Id
