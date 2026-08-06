@@ -20,7 +20,7 @@
 
 ## 🚀 Live Enterprise Deployments
 
-* 🌐 **Production Web Application (Vercel)**: [https://quiz-app-fullstack-ganeshprasadnayak292-4289s-projects.vercel.app](https://quiz-app-fullstack-ganeshprasadnayak292-4289s-projects.vercel.app)
+* 🌐 **Production Web Application (Vercel)**: [https://quiz-app-fullstack-smoky.vercel.app](https://quiz-app-fullstack-smoky.vercel.app) *(Alternative: [Vercel Main Deployment](https://quiz-app-fullstack-ganeshprasadnayak292-4289s-projects.vercel.app))*
 * ⚙️ **Production REST API Engine (Render Docker - Java 21 LTS)**: [https://quizora-backend-r1s8.onrender.com/api](https://quizora-backend-r1s8.onrender.com/api)
 * 🗄️ **High-Availability Cloud Database**: Aiven MySQL 8.0 (SSL Mode REQUIRED)
 
@@ -59,7 +59,7 @@
 ### 3️⃣ System Hardening & Bug Fixes
 - **Google OAuth 2.0 Hardening**: Refactored `/api/auth/google` endpoint to query users by email, auto-sanitize special characters, and generate unique non-colliding usernames.
 - **Stale Token Auto-Cleanup**: Frontend auto-clears corrupted or expired tokens (`401/403`) from `localStorage` and smoothly redirects to `/login`.
-- **Service Worker Network-First Strategy**: Replaced aggressive cache-first strategy with **Network-First for HTML/Navigation** and **Stale-While-Revalidate for Assets**, eliminating white screen rendering crashes (`Unexpected token '<'`).
+- **Service Worker Network-First Strategy**: Replaced aggressive cache-first strategy with **Network-First for HTML/Navigation** and **Stale-While-Revalidate for Assets**, permanently eliminating white screen rendering crashes (`Unexpected token '<'`).
 
 ### 4️⃣ Database B-Tree Indexing
 - Added JPA `@Index` annotations on high-frequency query columns in `User` (`username`, `email`), `Question` (`category`, `difficulty`), and `Result` (`user_id`). Converted full table scans $O(N)$ into $O(\log N)$ point lookups.
