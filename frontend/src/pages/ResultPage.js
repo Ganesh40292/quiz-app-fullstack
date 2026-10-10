@@ -6,7 +6,7 @@ import { useWindowSize } from "react-use";
 import CertificateModal from "../components/CertificateModal";
 import { soundFx } from "../utils/audio";
 
-function ResultPage({ score, total, restartQuiz, questions, selectedAnswers }) {
+function ResultPage({ score, total, restartQuiz, questions, selectedAnswers, correctAnswers = {} }) {
   const { width, height } = useWindowSize();
   const [showCert, setShowCert] = useState(false);
 
@@ -97,7 +97,7 @@ function ResultPage({ score, total, restartQuiz, questions, selectedAnswers }) {
       {/* 🔍 ANSWER REVIEW */}
       {questions.map((q, index) => {
         const selected = selectedAnswers[q.id];
-        const correct = q.correctAnswer;
+        const correct = (correctAnswers && correctAnswers[q.id]) || q.correctAnswer;
 
         return (
           <div key={q.id} className="card">

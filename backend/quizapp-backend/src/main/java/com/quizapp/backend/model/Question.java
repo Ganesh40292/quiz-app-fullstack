@@ -2,11 +2,13 @@ package com.quizapp.backend.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "questions", indexes = {
     @Index(name = "idx_question_category", columnList = "category"),
-    @Index(name = "idx_question_difficulty", columnList = "difficulty")
+    @Index(name = "idx_question_difficulty", columnList = "difficulty"),
+    @Index(name = "idx_question_status", columnList = "status")
 })
 public class Question {
 
@@ -14,27 +16,32 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
+    @NotBlank(message = "Question text cannot be blank")
+    @Size(min = 8, max = 1000, message = "Question text must be between 8 and 1000 characters")
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String question;   // ✅ FIXED (singular, consistent)
+    private String question;
 
-    @NotBlank
+    @NotBlank(message = "Option A is required")
+    @Size(min = 1, max = 255, message = "Option A must be between 1 and 255 characters")
     @Column(name = "option_a", nullable = false)
     private String optionA;
 
-    @NotBlank
+    @NotBlank(message = "Option B is required")
+    @Size(min = 1, max = 255, message = "Option B must be between 1 and 255 characters")
     @Column(name = "option_b", nullable = false)
     private String optionB;
 
-    @NotBlank
+    @NotBlank(message = "Option C is required")
+    @Size(min = 1, max = 255, message = "Option C must be between 1 and 255 characters")
     @Column(name = "option_c", nullable = false)
     private String optionC;
 
-    @NotBlank
+    @NotBlank(message = "Option D is required")
+    @Size(min = 1, max = 255, message = "Option D must be between 1 and 255 characters")
     @Column(name = "option_d", nullable = false)
     private String optionD;
 
-    @NotBlank
+    @NotBlank(message = "Correct answer is required")
     @Column(name = "correct_answer", nullable = false)
     private String correctAnswer;
 
@@ -43,6 +50,10 @@ public class Question {
 
     @Column(name = "difficulty")
     private String difficulty;
+
+    // 🛡️ MODERATION STATUS: PENDING_REVIEW, APPROVED, REJECTED
+    @Column(name = "status", nullable = false)
+    private String status = "APPROVED";
 
     /* =========================
        CONSTRUCTORS
@@ -136,5 +147,13 @@ public class Question {
 
     public void setDifficulty(String difficulty) {
         this.difficulty = difficulty;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

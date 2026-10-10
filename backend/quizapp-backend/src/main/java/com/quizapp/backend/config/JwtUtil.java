@@ -27,8 +27,15 @@ public class JwtUtil {
     }
 
     public String generateToken(String username) {
+        return generateToken(username, "USER");
+    }
+
+    public String generateToken(String username, String role) {
+        io.jsonwebtoken.Claims claims = Jwts.claims().setSubject(username);
+        claims.put("role", role != null ? role.toUpperCase() : "USER");
+
         return Jwts.builder()
-                .setSubject(username)
+                .setClaims(claims)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 day
                 .signWith(key)
@@ -42,6 +49,19 @@ public class JwtUtil {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public String extractRole(String token) {
+        try {
+            return (String) Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("role");
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public boolean validateToken(String token) {

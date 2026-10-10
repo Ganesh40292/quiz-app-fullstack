@@ -7,14 +7,18 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/Toast';
 import reportWebVitals from './reportWebVitals';
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ThemeProvider>
-      <ToastProvider>
-        <App />
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
 

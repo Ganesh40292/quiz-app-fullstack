@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
+import { checkAnswerApi } from "../services/api";
 
 function QuestionCard({
   question,
@@ -10,14 +11,26 @@ function QuestionCard({
   isFlagged = false,
   onToggleFlag,
 }) {
+  const [revealedCorrect, setRevealedCorrect] = useState(null);
   const answered = selectedAnswers[question.id] !== undefined;
 
-  const handleChange = (option) => {
+  const handleChange = async (option) => {
     if (practiceMode && answered) return;
     setSelectedAnswers((prev) => ({
       ...prev,
       [question.id]: option,
     }));
+
+    if (practiceMode) {
+      try {
+        const res = await checkAnswerApi(question.id, option);
+        if (res && res.correctAnswer) {
+          setRevealedCorrect(res.correctAnswer);
+        }
+      } catch (e) {
+        console.error("Practice check error:", e);
+      }
+    }
   };
 
   return (
@@ -60,8 +73,9 @@ function QuestionCard({
         const optionText = question[`option${opt}`];
 
         let className = "option";
-        if (practiceMode && answered) {
-          if (opt === question.correctAnswer) {
+        const correctTarget = revealedCorrect || question.correctAnswer;
+        if (practiceMode && answered && correctTarget) {
+          if (opt === correctTarget) {
             className += " correct";
           } else if (isSelected) {
             className += " wrong";

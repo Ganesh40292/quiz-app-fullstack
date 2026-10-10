@@ -1,4 +1,13 @@
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+const getBaseUrl = () => {
+  let url = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+  url = url.trim().replace(/\/+$/, "");
+  if (!url.endsWith("/api")) {
+    url += "/api";
+  }
+  return url;
+};
+
+const BASE_URL = getBaseUrl();
 
 /* =========================
    AUTH HELPER & HEADERS
@@ -56,8 +65,7 @@ export const getQuestions = async (category = "", difficulty = "") => {
 ========================= */
 export const registerUser = async (data) => {
   try {
-    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
-    const res = await fetch(`${API_URL}/auth/register`, {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -92,6 +100,23 @@ export const googleLogin = async (data) => {
 };
 
 /* =========================
+   VERIFY CREATOR SECURITY QUESTION
+========================= */
+export const verifySecurityQuestion = async (data) => {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/verify-security-question`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch (error) {
+    console.error("Error verifying security question:", error);
+    return { status: "fail", message: "Network error during security challenge" };
+  }
+};
+
+/* =========================
    SUBMIT QUIZ
 ========================= */
 export const submitQuiz = async (answers) => {
@@ -109,6 +134,24 @@ export const submitQuiz = async (answers) => {
   } catch (error) {
     console.error("Error submitting quiz:", error);
     return { score: 0, total: 0 };
+  }
+};
+
+/* =========================
+   CHECK SINGLE ANSWER (ANTI-CHEAT LIVE CHECK)
+========================= */
+export const checkAnswerApi = async (questionId, answer) => {
+  try {
+    const res = await fetch(`${BASE_URL}/quiz/check-answer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId, answer }),
+    });
+    if (!res.ok) return { correct: false };
+    return await res.json();
+  } catch (err) {
+    console.error("Error checking answer:", err);
+    return { correct: false };
   }
 };
 
@@ -161,6 +204,11 @@ export const addQuestion = async (data) => {
     body: JSON.stringify(data),
   });
   checkAuthStatus(res);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to add question (${res.status})`);
+  }
+  return await res.json().catch(() => ({}));
 };
 
 export const updateQuestion = async (id, data) => {
@@ -170,6 +218,11 @@ export const updateQuestion = async (id, data) => {
     body: JSON.stringify(data),
   });
   checkAuthStatus(res);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Failed to update question (${res.status})`);
+  }
+  return await res.json().catch(() => ({}));
 };
 
 export const deleteQuestion = async (id) => {
@@ -180,9 +233,39 @@ export const deleteQuestion = async (id) => {
   checkAuthStatus(res);
 };
 
-export const getAdminQuestionsPaginated = async (page, size) => {
+export const approveQuestion = async (id) => {
+  const res = await fetch(`${BASE_URL}/admin/approve/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+  });
+  checkAuthStatus(res);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to approve question");
+  }
+  return await res.json();
+};
+
+export const rejectQuestion = async (id) => {
+  const res = await fetch(`${BASE_URL}/admin/reject/${id}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+  });
+  checkAuthStatus(res);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to reject question");
+  }
+  return await res.json();
+};
+
+export const getAdminQuestionsPaginated = async (page = 0, size = 5, search = "") => {
   try {
-    const res = await fetch(`${BASE_URL}/admin/questions?page=${page}&size=${size}`, {
+    let url = `${BASE_URL}/admin/questions?page=${page}&size=${size}`;
+    if (search && search.trim()) {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    const res = await fetch(url, {
       headers: getAuthHeaders(),
     });
     checkAuthStatus(res);

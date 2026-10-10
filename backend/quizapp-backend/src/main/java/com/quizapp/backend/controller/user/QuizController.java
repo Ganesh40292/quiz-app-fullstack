@@ -14,6 +14,8 @@ import com.quizapp.backend.repository.ResultRepository;
 import com.quizapp.backend.repository.UserRepository;
 import com.quizapp.backend.config.JwtUtil;
 import com.quizapp.backend.service.interfaces.QuestionService;
+import com.quizapp.backend.dto.response.QuestionDto;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 @RestController
@@ -33,31 +35,68 @@ public class QuizController {
     @Autowired
     private JwtUtil jwtUtil;
 
+
     /* =========================
-       GET ALL / FILTERED QUESTIONS
+       GET ALL / FILTERED QUESTIONS (SANITIZED DTO)
     ========================= */
     @GetMapping("/questions")
-    public List<Question> getQuestions(
+    public List<QuestionDto> getQuestions(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String difficulty) {
-        return questionService.getFilteredQuestions(category, difficulty);
+        return questionService.getFilteredQuestions(category, difficulty)
+                .stream()
+                .map(QuestionDto::new)
+                .collect(Collectors.toList());
     }
 
     /* =========================
-       SUBMIT QUIZ (CALCULATE SCORE)
+       CHECK SINGLE ANSWER (PRACTICE / CHALLENGE LIVE FEEDBACK)
+    ========================= */
+    @PostMapping("/check-answer")
+    public Map<String, Object> checkAnswer(@RequestBody Map<String, Object> req) {
+        Map<String, Object> res = new HashMap<>();
+        if (req == null || !req.containsKey("questionId")) {
+            res.put("correct", false);
+            return res;
+        }
+
+        Long questionId = Long.valueOf(req.get("questionId").toString());
+        String selected = req.get("answer") != null ? req.get("answer").toString().trim() : "";
+
+        Question q = questionService.getQuestionById(questionId);
+        if (q != null) {
+            boolean isCorrect = selected.equalsIgnoreCase(q.getCorrectAnswer().trim());
+            res.put("correct", isCorrect);
+            res.put("correctAnswer", q.getCorrectAnswer().trim());
+        } else {
+            res.put("correct", false);
+        }
+        return res;
+    }
+
+    /* =========================
+       SUBMIT QUIZ (CALCULATE SCORE & RETURN REVIEW DATA)
     ========================= */
     @PostMapping("/submit")
-    public Map<String, Integer> submitQuiz(
+    public Map<String, Object> submitQuiz(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestBody Map<Long, String> answers) {
 
-        List<Question> questions = questionService.getAllQuestions();
         int score = 0;
+        int total = answers != null ? answers.size() : 0;
+        Map<Long, String> correctAnswers = new HashMap<>();
 
-        for (Question q : questions) {
-            String selected = answers.get(q.getId());
-            if (selected != null && selected.equalsIgnoreCase(q.getCorrectAnswer())) {
-                score++;
+        if (answers != null && !answers.isEmpty()) {
+            for (Map.Entry<Long, String> entry : answers.entrySet()) {
+                Question q = questionService.getQuestionById(entry.getKey());
+                if (q != null) {
+                    correctAnswers.put(q.getId(), q.getCorrectAnswer());
+                    if (entry.getValue() != null && !entry.getValue().trim().isEmpty()) {
+                        if (entry.getValue().trim().equalsIgnoreCase(q.getCorrectAnswer().trim())) {
+                            score++;
+                        }
+                    }
+                }
             }
         }
 
@@ -70,16 +109,17 @@ public class QuizController {
                 if (optUser.isPresent()) {
                     Result result = new Result();
                     result.setScore(score);
-                    result.setTotalQuestions(questions.size());
+                    result.setTotalQuestions(total);
                     result.setUser(optUser.get());
                     resultRepository.save(result);
                 }
             }
         }
 
-        Map<String, Integer> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         response.put("score", score);
-        response.put("total", questions.size());
+        response.put("total", total);
+        response.put("correctAnswers", correctAnswers);
 
         return response;
     }

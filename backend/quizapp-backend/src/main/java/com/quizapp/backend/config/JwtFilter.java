@@ -44,22 +44,19 @@ public class JwtFilter extends OncePerRequestFilter {
                 String username = jwtUtil.extractUsername(token);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    Optional<User> optUser = userRepository.findByUsername(username);
-                    if (optUser.isPresent()) {
-                        User user = optUser.get();
-                        String role = user.getRole();
-                        if (role == null || role.isEmpty()) {
-                            role = "USER";
-                        }
-                        String roleName = "ROLE_" + role.toUpperCase();
-                        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleName);
-
-                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                                user, null, Collections.singletonList(authority));
-                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    String role = jwtUtil.extractRole(token);
+                    if (role == null || role.isEmpty()) {
+                        Optional<User> optUser = userRepository.findByUsername(username);
+                        role = optUser.map(User::getRole).orElse("USER");
                     }
+                    String roleName = "ROLE_" + role.toUpperCase();
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleName);
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            username, null, Collections.singletonList(authority));
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
         }

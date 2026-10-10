@@ -20,6 +20,8 @@ const LeaderboardPage = lazy(() => import("./pages/LeaderboardPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 
 /* =========================
    PAGE LOADING FALLBACK
@@ -52,17 +54,46 @@ function PageLoader() {
 
 /* =========================
    PROTECTED ROUTE WRAPPERS & TOKEN VALIDATION
-   Ensures stale or "undefined" tokens are cleared cleanly.
+   Ensures stale, expired, or tampered tokens are cleared cleanly.
 ========================= */
+const parseJwtPayload = (token) => {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+};
+
+const clearAuthSession = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("role");
+  localStorage.removeItem("username");
+  localStorage.removeItem("email");
+};
+
 const getValidToken = () => {
   const token = localStorage.getItem("token");
   if (!token || token === "undefined" || token === "null" || token.trim() === "") {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("username");
-    localStorage.removeItem("email");
+    clearAuthSession();
     return null;
   }
+
+  const payload = parseJwtPayload(token);
+  // Auto-clear if token exp is in the past
+  if (payload && payload.exp && payload.exp * 1000 < Date.now()) {
+    clearAuthSession();
+    return null;
+  }
+
   return token;
 };
 
@@ -76,8 +107,14 @@ function ProtectedRoute({ children }) {
 
 function AdminRoute({ children }) {
   const token = getValidToken();
-  const role = (localStorage.getItem("role") || "").toLowerCase();
-  if (!token || role !== "admin") {
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  const payload = parseJwtPayload(token);
+  const tokenRole = payload?.role ? payload.role.toLowerCase() : "";
+  const storedRole = (localStorage.getItem("role") || "").toLowerCase();
+
+  if (tokenRole !== "admin" && storedRole !== "admin") {
     return <Navigate to="/login" replace />;
   }
   return children;
@@ -92,6 +129,13 @@ function GuestRoute({ children }) {
 }
 
 function App() {
+  React.useEffect(() => {
+    // Background pre-warm ping for Render cold starts
+    const rawUrl = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+    const healthUrl = rawUrl.replace(/\/api\/?$/, "") + "/actuator/health";
+    fetch(healthUrl).catch(() => {});
+  }, []);
+
   return (
     <Router>
       <Navbar />
@@ -184,6 +228,14 @@ function App() {
               </AdminRoute>
             }
           />
+
+          {/* 📜 TERMS & CONDITIONS (Public) */}
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/terms-and-conditions" element={<TermsPage />} />
+
+          {/* 🛡️ PRIVACY POLICY (Public) */}
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
           {/* ⚠️ 404 */}
           <Route path="*" element={<h1 style={{ textAlign: "center", marginTop: "50px", color: "#fff" }}>404 - Page Not Found</h1>} />

@@ -19,9 +19,15 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @jakarta.persistence.Column(nullable = false, unique = true)
     private String username;
+
+    @jakarta.persistence.Column(nullable = false, unique = true)
     private String email;
+
+    @jakarta.persistence.Column(nullable = false)
     private String password;
+
     private String role; // USER or ADMIN
 
     public User() {}

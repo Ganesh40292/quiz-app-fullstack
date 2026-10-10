@@ -5,12 +5,15 @@ import {
   addQuestion,
   updateQuestion,
   deleteQuestion,
+  approveQuestion,
+  rejectQuestion,
   getQuestions,
   submitQuiz
 } from "../services/api";
 import DashboardCharts from "../components/DashboardCharts";
 import QuestionCard from "../components/QuestionCard";
 import { useToast } from "../components/Toast";
+import QuitConfirmationModal from "../components/QuitConfirmationModal";
 
 function AdminPage() {
   const { addToast } = useToast();
@@ -47,7 +50,7 @@ function AdminPage() {
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAdminQuestionsPaginated(page, size);
+      const data = await getAdminQuestionsPaginated(page, size, search);
       
       // Spring Page object has content and totalPages
       setQuestions(data.content || []);
@@ -58,7 +61,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, addToast]);
+  }, [page, size, search, addToast]);
 
   /* =========================
      FETCH STATS
@@ -127,9 +130,34 @@ function AdminPage() {
 
     } catch (err) {
       console.error("Submit error:", err);
-      addToast("Failed to submit question.", "error");
+      addToast(err.message || "Failed to submit question.", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  /* =========================
+     MODERATION HANDLERS
+  ========================= */
+  const handleApprove = async (id) => {
+    try {
+      await approveQuestion(id);
+      addToast("Question approved for live quizzes! ✅", "success");
+      fetchQuestions();
+      fetchStats();
+    } catch (err) {
+      addToast(err.message || "Failed to approve question.", "error");
+    }
+  };
+
+  const handleReject = async (id) => {
+    try {
+      await rejectQuestion(id);
+      addToast("Question rejected from live quizzes! ❌", "info");
+      fetchQuestions();
+      fetchStats();
+    } catch (err) {
+      addToast(err.message || "Failed to reject question.", "error");
     }
   };
 
@@ -159,10 +187,8 @@ function AdminPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Local client filtering on loaded page chunk
-  const filtered = questions.filter((q) =>
-    q.question.toLowerCase().includes(search.toLowerCase())
-  );
+  // Server-paginated and searched questions
+  const filtered = questions;
 
   /* =========================
      TEST QUIZ STATE & LOGIC
@@ -176,6 +202,7 @@ function AdminPage() {
   const [testDifficulty, setTestDifficulty] = useState("");
   const [availableCategories, setAvailableCategories] = useState(["All"]);
   const [availableDifficulties, setAvailableDifficulties] = useState(["All", "Easy", "Medium", "Hard"]);
+  const [showTestQuitModal, setShowTestQuitModal] = useState(false);
 
   // Fetch filter options when test quiz tab is active
   useEffect(() => {
@@ -236,6 +263,14 @@ function AdminPage() {
     setTestSubmitted(false);
     setTestCategory("");
     setTestDifficulty("");
+  };
+
+  const handleTestResetClick = () => {
+    if (testQuestions.length > 0 && !testSubmitted && Object.keys(testAnswers).length > 0) {
+      setShowTestQuitModal(true);
+    } else {
+      resetTestQuiz();
+    }
   };
 
   return (
@@ -334,44 +369,394 @@ function AdminPage() {
               </div>
 
               {/* ➕ FORM CARD */}
-              <div className="card">
-                <h3>{editId ? "✏️ Edit Question" : "➕ Add Question"}</h3>
-                
-                <input
-                  name="question"
-                  value={form.question}
-                  onChange={handleChange}
-                  placeholder="Enter Question Text"
-                />
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <input name="optionA" value={form.optionA} onChange={handleChange} placeholder="Option A" />
-                  <input name="optionB" value={form.optionB} onChange={handleChange} placeholder="Option B" />
-                  <input name="optionC" value={form.optionC} onChange={handleChange} placeholder="Option C" />
-                  <input name="optionD" value={form.optionD} onChange={handleChange} placeholder="Option D" />
+              <div
+                className="card"
+                style={{
+                  padding: "28px",
+                  borderRadius: "20px",
+                  border: "1px solid rgba(0, 198, 255, 0.3)",
+                  background: "linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(30, 27, 75, 0.45) 100%)",
+                  boxShadow: "0 12px 35px rgba(0, 0, 0, 0.35)",
+                  position: "relative",
+                  overflow: "hidden"
+                }}
+              >
+                {/* Header with Title, Icon and Status */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px", flexWrap: "wrap", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "12px",
+                        background: editId ? "linear-gradient(135deg, #f59e0b, #ef4444)" : "linear-gradient(135deg, #00c6ff, #0072ff)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1.3rem",
+                        boxShadow: editId ? "0 4px 15px rgba(245, 158, 11, 0.35)" : "0 4px 15px rgba(0, 198, 255, 0.35)"
+                      }}
+                    >
+                      {editId ? "✏️" : "➕"}
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "700", color: "var(--text-primary)" }}>
+                        {editId ? `Edit Question #${editId}` : "Create New Question"}
+                      </h3>
+                      <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                        {editId ? "Update question content, choices, or metadata" : "Add a high-quality question with options and correct answer"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {editId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditId(null);
+                        setForm({
+                          question: "",
+                          optionA: "",
+                          optionB: "",
+                          optionC: "",
+                          optionD: "",
+                          correctAnswer: "",
+                          category: "",
+                          difficulty: ""
+                        });
+                      }}
+                      style={{
+                        padding: "8px 16px",
+                        borderRadius: "8px",
+                        fontSize: "0.85rem",
+                        fontWeight: "600",
+                        background: "rgba(239, 68, 68, 0.15)",
+                        border: "1px solid rgba(239, 68, 68, 0.4)",
+                        color: "#ef4444",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      ✕ Cancel Edit
+                    </button>
+                  )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginTop: "10px" }}>
-                  <input name="correctAnswer" value={form.correctAnswer} onChange={handleChange} placeholder="Correct Answer (A/B/C/D)" />
-                  <input name="category" value={form.category} onChange={handleChange} placeholder="Category (e.g. Java)" />
-                  <input name="difficulty" value={form.difficulty} onChange={handleChange} placeholder="Difficulty (e.g. Medium)" />
+                {/* Question Statement */}
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <label style={{ fontSize: "0.82rem", fontWeight: "700", letterSpacing: "0.04em", color: "var(--accent)", textTransform: "uppercase" }}>
+                      📝 Question Statement <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      {form.question?.length || 0} characters
+                    </span>
+                  </div>
+                  <textarea
+                    name="question"
+                    value={form.question || ""}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="Enter the complete question statement here..."
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      borderRadius: "12px",
+                      background: "var(--input-bg)",
+                      color: "var(--input-text)",
+                      border: "var(--input-border)",
+                      outline: "none",
+                      fontSize: "0.95rem",
+                      lineHeight: "1.5",
+                      fontFamily: "inherit",
+                      resize: "vertical",
+                      boxSizing: "border-box",
+                      transition: "all 0.2s ease"
+                    }}
+                  />
                 </div>
 
-                <button className="btn" onClick={handleSubmit} disabled={loading} style={{ width: "100%", marginTop: "20px" }}>
-                  {loading
-                    ? "Processing..."
-                    : editId
-                    ? "Update Question"
-                    : "Add Question"}
-                </button>
+                {/* 4 Options Grid (A, B, C, D) */}
+                <div style={{ marginBottom: "22px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <label style={{ fontSize: "0.82rem", fontWeight: "700", letterSpacing: "0.04em", color: "var(--accent)", textTransform: "uppercase" }}>
+                      🎯 Answer Options <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                      Click badge or checkmark to set correct answer
+                    </span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px" }}>
+                    {[
+                      { key: "optionA", letter: "A", color: "#38bdf8", bg: "rgba(56, 189, 248, 0.15)" },
+                      { key: "optionB", letter: "B", color: "#a855f7", bg: "rgba(168, 85, 247, 0.15)" },
+                      { key: "optionC", letter: "C", color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)" },
+                      { key: "optionD", letter: "D", color: "#10b981", bg: "rgba(16, 185, 129, 0.15)" }
+                    ].map(({ key, letter, color, bg }) => {
+                      const isCorrect = form.correctAnswer?.toUpperCase() === letter;
+                      return (
+                        <div
+                          key={key}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            background: isCorrect ? "rgba(16, 185, 129, 0.12)" : "var(--input-bg)",
+                            border: isCorrect ? "1.5px solid #10b981" : "var(--input-border)",
+                            borderRadius: "12px",
+                            padding: "6px 12px",
+                            transition: "all 0.2s ease",
+                            boxShadow: isCorrect ? "0 0 14px rgba(16, 185, 129, 0.25)" : "none"
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, correctAnswer: letter }))}
+                            title={`Mark Option ${letter} as correct answer`}
+                            style={{
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "8px",
+                              border: `1.5px solid ${isCorrect ? "#10b981" : color}`,
+                              background: isCorrect ? "#10b981" : bg,
+                              color: isCorrect ? "#ffffff" : color,
+                              fontWeight: "700",
+                              fontSize: "0.85rem",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              flexShrink: 0,
+                              marginRight: "10px",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            {letter}
+                          </button>
+
+                          <input
+                            type="text"
+                            name={key}
+                            value={form[key] || ""}
+                            onChange={handleChange}
+                            placeholder={`Enter Option ${letter}...`}
+                            style={{
+                              flex: 1,
+                              background: "transparent",
+                              border: "none",
+                              color: "var(--input-text)",
+                              fontSize: "0.92rem",
+                              outline: "none",
+                              padding: "8px 4px",
+                              margin: 0
+                            }}
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, correctAnswer: letter }))}
+                            title={isCorrect ? "Currently selected as correct" : `Set ${letter} as correct`}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "4px 6px",
+                              borderRadius: "6px",
+                              color: isCorrect ? "#10b981" : "var(--text-secondary)",
+                              fontSize: "0.82rem",
+                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px"
+                            }}
+                          >
+                            {isCorrect ? "✓ Correct" : "Select"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3-Column: Correct Answer Selector + Category Datalist + Difficulty Select */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px", marginBottom: "22px" }}>
+                  {/* Correct Answer Selector */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", letterSpacing: "0.04em", color: "var(--accent)", textTransform: "uppercase", marginBottom: "6px" }}>
+                      ✅ Correct Answer <span style={{ color: "#ef4444" }}>*</span>
+                    </label>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", height: "46px" }}>
+                      {["A", "B", "C", "D"].map((opt) => {
+                        const isSelected = form.correctAnswer?.toUpperCase() === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setForm((prev) => ({ ...prev, correctAnswer: opt }))}
+                            style={{
+                              height: "100%",
+                              borderRadius: "10px",
+                              fontWeight: "700",
+                              fontSize: "0.95rem",
+                              cursor: "pointer",
+                              border: isSelected ? "1.5px solid #10b981" : "var(--input-border)",
+                              background: isSelected ? "linear-gradient(135deg, #059669, #10b981)" : "var(--input-bg)",
+                              color: isSelected ? "#ffffff" : "var(--text-secondary)",
+                              boxShadow: isSelected ? "0 4px 12px rgba(16, 185, 129, 0.35)" : "none",
+                              transition: "all 0.2s ease"
+                            }}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Category Field */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", letterSpacing: "0.04em", color: "var(--accent)", textTransform: "uppercase", marginBottom: "6px" }}>
+                      📂 Category
+                    </label>
+                    <input
+                      type="text"
+                      list="admin-category-list"
+                      name="category"
+                      value={form.category || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. Science, Math, Java..."
+                      style={{
+                        width: "100%",
+                        height: "46px",
+                        padding: "0 14px",
+                        margin: 0,
+                        borderRadius: "10px",
+                        background: "var(--input-bg)",
+                        color: "var(--input-text)",
+                        border: "var(--input-border)",
+                        outline: "none",
+                        fontSize: "0.92rem",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                    <datalist id="admin-category-list">
+                      <option value="Math" />
+                      <option value="Science" />
+                      <option value="Programming" />
+                      <option value="General Knowledge" />
+                      <option value="Java" />
+                      <option value="Python" />
+                      <option value="Data Structures" />
+                      <option value="Web Development" />
+                    </datalist>
+                  </div>
+
+                  {/* Difficulty Field */}
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: "700", letterSpacing: "0.04em", color: "var(--accent)", textTransform: "uppercase", marginBottom: "6px" }}>
+                      ⚡ Difficulty
+                    </label>
+                    <select
+                      name="difficulty"
+                      value={form.difficulty || ""}
+                      onChange={handleChange}
+                      style={{
+                        width: "100%",
+                        height: "46px",
+                        padding: "0 14px",
+                        margin: 0,
+                        borderRadius: "10px",
+                        background: "var(--input-bg)",
+                        color: "var(--input-text)",
+                        border: "var(--input-border)",
+                        outline: "none",
+                        fontSize: "0.92rem",
+                        boxSizing: "border-box",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <option value="">Select Difficulty...</option>
+                      <option value="Easy">🟢 Easy</option>
+                      <option value="Medium">🟡 Medium</option>
+                      <option value="Hard">🔴 Hard</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <button
+                    className="btn"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    style={{
+                      flex: 1,
+                      height: "48px",
+                      borderRadius: "12px",
+                      fontSize: "1rem",
+                      fontWeight: "700",
+                      letterSpacing: "0.02em",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                      background: editId ? "linear-gradient(135deg, #f59e0b, #ef4444)" : "var(--btn-gradient)",
+                      boxShadow: editId ? "0 6px 20px rgba(245, 158, 11, 0.35)" : "0 6px 20px rgba(0, 198, 255, 0.35)",
+                      cursor: loading ? "not-allowed" : "pointer"
+                    }}
+                  >
+                    {loading ? (
+                      "⏳ Processing..."
+                    ) : editId ? (
+                      "💾 Update Question"
+                    ) : (
+                      "✨ Add Question to Bank"
+                    )}
+                  </button>
+
+                  {editId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditId(null);
+                        setForm({
+                          question: "",
+                          optionA: "",
+                          optionB: "",
+                          optionC: "",
+                          optionD: "",
+                          correctAnswer: "",
+                          category: "",
+                          difficulty: ""
+                        });
+                      }}
+                      style={{
+                        height: "48px",
+                        padding: "0 20px",
+                        borderRadius: "12px",
+                        border: "1px solid rgba(255, 255, 255, 0.2)",
+                        background: "rgba(255, 255, 255, 0.08)",
+                        color: "var(--text-primary)",
+                        fontWeight: "600",
+                        fontSize: "0.95rem",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* SEARCH */}
+              {/* SEARCH (SERVER-WIDE) */}
               <input
                 style={{ marginTop: "20px" }}
-                placeholder="🔍 Search loaded questions on this page..."
+                placeholder="🔍 Search question statement across entire question bank..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
               />
 
               {/* QUESTIONS LIST */}
@@ -381,8 +766,41 @@ function AdminPage() {
                 <p>No questions found on this page.</p>
               ) : (
                 filtered.map((q) => (
-                  <div key={q.id} className="card">
-                    <h3>{q.question}</h3>
+                  <div key={q.id} className="card" style={{ position: "relative" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>
+                      <h3 style={{ margin: 0 }}>{q.question}</h3>
+                      <span
+                        style={{
+                          fontSize: "0.75rem",
+                          fontWeight: "700",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                          padding: "4px 10px",
+                          borderRadius: "12px",
+                          whiteSpace: "nowrap",
+                          background: q.status === "APPROVED"
+                            ? "rgba(0, 255, 136, 0.15)"
+                            : q.status === "REJECTED"
+                            ? "rgba(255, 77, 109, 0.15)"
+                            : "rgba(255, 170, 0, 0.15)",
+                          color: q.status === "APPROVED"
+                            ? "#00ff88"
+                            : q.status === "REJECTED"
+                            ? "#ff4d6d"
+                            : "#ffaa00",
+                          border: `1px solid ${
+                            q.status === "APPROVED"
+                              ? "rgba(0, 255, 136, 0.3)"
+                              : q.status === "REJECTED"
+                              ? "rgba(255, 77, 109, 0.3)"
+                              : "rgba(255, 170, 0, 0.3)"
+                          }`
+                        }}
+                      >
+                        {q.status || "APPROVED"}
+                      </span>
+                    </div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", margin: "10px 0" }}>
                       <p><b>A:</b> {q.optionA}</p>
                       <p><b>B:</b> {q.optionB}</p>
@@ -395,20 +813,38 @@ function AdminPage() {
                       <b>Difficulty:</b> {q.difficulty || "Medium"}
                     </p>
 
-                    <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "15px" }}>
+                      {q.status !== "APPROVED" && (
+                        <button
+                          className="btn"
+                          style={{ margin: 0, padding: "6px 14px", fontSize: "13px", background: "linear-gradient(135deg, #10b981, #059669)" }}
+                          onClick={() => handleApprove(q.id)}
+                        >
+                          Approve ✅
+                        </button>
+                      )}
+                      {q.status !== "REJECTED" && (
+                        <button
+                          className="btn"
+                          style={{ margin: 0, padding: "6px 14px", fontSize: "13px", background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
+                          onClick={() => handleReject(q.id)}
+                        >
+                          Reject ⛔
+                        </button>
+                      )}
                       <button
                         className="btn"
-                        style={{ margin: 0, padding: "8px 16px", fontSize: "14px" }}
+                        style={{ margin: 0, padding: "6px 14px", fontSize: "13px" }}
                         onClick={() => handleEdit(q)}
                       >
-                        Edit
+                        Edit ✏️
                       </button>
                       <button
                         className="btn"
-                        style={{ margin: 0, padding: "8px 16px", fontSize: "14px", background: "linear-gradient(135deg, #dc3545, #ff4d6d)" }}
+                        style={{ margin: 0, padding: "6px 14px", fontSize: "13px", background: "linear-gradient(135deg, #dc3545, #ff4d6d)" }}
                         onClick={() => handleDelete(q.id)}
                       >
-                        Delete
+                        Delete 🗑️
                       </button>
                     </div>
                   </div>
@@ -508,7 +944,7 @@ function AdminPage() {
                     <button
                       className="btn"
                       style={{ background: "linear-gradient(135deg, #6b7280, #9ca3af)" }}
-                      onClick={resetTestQuiz}
+                      onClick={handleTestResetClick}
                     >
                       🔄 Reset
                     </button>
@@ -559,6 +995,14 @@ function AdminPage() {
                   </button>
                 </div>
               )}
+
+              {/* 🚪 DOUBLE CONFIRMATION QUIT MODAL */}
+              <QuitConfirmationModal
+                isOpen={showTestQuitModal}
+                onClose={() => setShowTestQuitModal(false)}
+                onConfirm={resetTestQuiz}
+                answeredCount={Object.keys(testAnswers).length}
+              />
             </div>
           )}
 

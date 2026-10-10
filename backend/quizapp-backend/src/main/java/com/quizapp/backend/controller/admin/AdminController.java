@@ -27,9 +27,13 @@ public class AdminController {
     @GetMapping("/questions")
     public Object getAllQuestions(
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String search) {
         if (page != null && size != null) {
             org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+            if (search != null && !search.trim().isEmpty()) {
+                return questionService.searchQuestionsPaginated(search.trim(), pageable);
+            }
             return questionService.getAllQuestionsPaginated(pageable);
         }
         return questionService.getAllQuestions();
@@ -52,6 +56,22 @@ public class AdminController {
             @RequestBody Question updatedQuestion) {
         updatedQuestion.setId(id);
         return questionService.addQuestion(updatedQuestion);
+    }
+
+    /* =========================
+       MODERATION: APPROVE QUESTION
+    ========================= */
+    @PutMapping("/approve/{id}")
+    public Question approveQuestion(@PathVariable Long id) {
+        return questionService.updateStatus(id, "APPROVED");
+    }
+
+    /* =========================
+       MODERATION: REJECT QUESTION
+    ========================= */
+    @PutMapping("/reject/{id}")
+    public Question rejectQuestion(@PathVariable Long id) {
+        return questionService.updateStatus(id, "REJECTED");
     }
 
     /* =========================

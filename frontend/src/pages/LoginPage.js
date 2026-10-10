@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ShaderBackground from "../components/ShaderBackground";
-import { googleLogin } from "../services/api";
+import { googleLogin, verifySecurityQuestion } from "../services/api";
+import LegalDocModal from "../components/LegalDocModal";
 
 function LoginPage() {
   const [form, setForm] = useState({
@@ -9,6 +10,12 @@ function LoginPage() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengeQuestion, setChallengeQuestion] = useState("");
+  const [securityAnswer, setSecurityAnswer] = useState("");
+  const [blockedError, setBlockedError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   /* =========================
      GOOGLE OAUTH HANDLER
@@ -16,20 +23,8 @@ function LoginPage() {
   const handleGoogleResponse = async (response) => {
     try {
       setLoading(true);
-      // Decode JWT payload from Google
-      const base64Url = response.credential.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      );
-      const payload = JSON.parse(jsonPayload);
-
       const res = await googleLogin({
-        email: payload.email,
-        name: payload.name || payload.given_name
+        credential: response.credential
       });
 
       if (res.status === "success") {
@@ -53,6 +48,11 @@ function LoginPage() {
      GOOGLE OAUTH HANDLER & CLICK
   ========================= */
   const handleGoogleClick = () => {
+    if (!acceptedTerms) {
+      alert("Please accept the Terms & Conditions before continuing with Google.");
+      return;
+    }
+
     const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
     
     if (window.google?.accounts?.id) {
@@ -98,6 +98,11 @@ function LoginPage() {
      HANDLE LOGIN
   ========================= */
   const handleLogin = async () => {
+    if (!acceptedTerms) {
+      alert("Please accept the Terms & Conditions to proceed with login.");
+      return;
+    }
+
     if (!form.username || !form.password) {
       alert("Enter username & password");
       return;
@@ -105,6 +110,7 @@ function LoginPage() {
 
     try {
       setLoading(true);
+      setBlockedError("");
 
       const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
       const res = await fetch(`${API_URL}/auth/login`, {
@@ -126,6 +132,13 @@ function LoginPage() {
         localStorage.setItem("role", data.role);
         localStorage.setItem("username", data.username);
         window.location.href = data.role.toLowerCase() === "admin" ? "/admin" : "/";
+      } else if (data.status === "challenge") {
+        setShowChallengeModal(true);
+        setChallengeQuestion(data.question || "What is the nickname of the creator of project?");
+      } else if (data.status === "blocked") {
+        setBlockedError(data.message || "You are not able to access admin");
+        setShowChallengeModal(false);
+        alert(data.message || "You are not able to access admin");
       } else {
         alert(data.message || "Invalid credentials");
       }
@@ -133,6 +146,62 @@ function LoginPage() {
     } catch (err) {
       console.error(err);
       alert("Backend not running or error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =========================
+     HANDLE CREATOR SECURITY CHALLENGE
+  ========================= */
+  const handleVerifyChallenge = async () => {
+    if (!securityAnswer || !securityAnswer.trim()) {
+      alert("Please provide the answer to the security question.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await verifySecurityQuestion({
+        username: form.username,
+        password: form.password,
+        securityAnswer: securityAnswer.trim()
+      });
+
+      if (res.status === "success") {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("role", res.role);
+        localStorage.setItem("username", res.username);
+        setShowChallengeModal(false);
+        window.location.href = res.role.toLowerCase() === "admin" ? "/admin" : "/";
+      } else if (res.status === "blocked") {
+        setShowChallengeModal(false);
+        setBlockedError(res.message || "You are not able to access admin");
+
+        // 🚨 Dispatch direct email alert to creator
+        try {
+          fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              access_key: "1dd4eaeb-c34a-43de-9ea2-4a5b8fcf933b",
+              name: "Quizora Security Sentinel",
+              email: "security-alert@quizora.dev",
+              subject: "[SECURITY ALERT] Unauthorized Admin Access Attempt on Quizora!",
+              message: `🚨 CRITICAL SECURITY ALERT: Unauthorized Admin Access Attempt\n\nA user attempted to access administrative privileges (3+ failed attempts) and entered an incorrect answer to the creator's security challenge question.\n\n• Target Admin Account: ${form.username}\n• Incorrect Answer Entered: "${securityAnswer}"\n• Timestamp: ${new Date().toISOString()}\n• Result: User blocked with "You are not able to access admin".`
+            })
+          });
+        } catch (e) {
+          console.error("Alert email error:", e);
+        }
+
+        alert(res.message || "You are not able to access admin");
+      } else {
+        alert(res.message || "Verification failed");
+      }
+    } catch (err) {
+      console.error("Challenge error:", err);
+      alert("Failed to verify security question.");
     } finally {
       setLoading(false);
     }
@@ -164,6 +233,24 @@ function LoginPage() {
           🔐 Login to Quizora
         </h1>
 
+        {blockedError && (
+          <div
+            style={{
+              background: "rgba(239, 68, 68, 0.2)",
+              border: "1px solid rgba(239, 68, 68, 0.5)",
+              color: "#fca5a5",
+              padding: "12px 16px",
+              borderRadius: "12px",
+              marginBottom: "20px",
+              fontSize: "0.95rem",
+              fontWeight: "600",
+              textAlign: "center"
+            }}
+          >
+            ⛔ {blockedError}
+          </div>
+        )}
+
         <input
           type="text"
           name="username"
@@ -184,11 +271,57 @@ function LoginPage() {
           onChange={handleChange}
         />
 
+        {/* 📜 MANDATORY TERMS CHECKBOX */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", margin: "14px 0 16px", textAlign: "left" }}>
+          <input
+            type="checkbox"
+            id="login-terms"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            style={{
+              marginTop: "3px",
+              width: "18px",
+              height: "18px",
+              accentColor: "#00c6ff",
+              cursor: "pointer",
+              flexShrink: 0
+            }}
+          />
+          <label htmlFor="login-terms" style={{ fontSize: "0.83rem", color: "#cbd5e1", lineHeight: "1.45", cursor: "pointer" }}>
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowTermsModal(true); }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#00c6ff",
+                padding: 0,
+                textDecoration: "underline",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "0.83rem"
+              }}
+            >
+              Terms & Conditions
+            </button>
+            .
+          </label>
+        </div>
+
         <button
           className="btn liquid-glass hover:scale-[1.03]"
           onClick={handleLogin}
-          disabled={loading}
-          style={{ width: "100%", marginTop: "15px", borderRadius: "9999px", padding: "14px", fontSize: "1rem", fontWeight: "500", cursor: "pointer" }}
+          disabled={loading || !acceptedTerms}
+          style={{
+            width: "100%",
+            borderRadius: "9999px",
+            padding: "14px",
+            fontSize: "1rem",
+            fontWeight: "500",
+            cursor: acceptedTerms && !loading ? "pointer" : "not-allowed",
+            opacity: acceptedTerms && !loading ? 1 : 0.6
+          }}
         >
           {loading ? "Logging in..." : "Login"}
         </button>
@@ -205,13 +338,15 @@ function LoginPage() {
           type="button"
           className="liquid-glass hover:scale-[1.02]"
           onClick={handleGoogleClick}
+          disabled={!acceptedTerms}
           style={{
             width: "100%",
             borderRadius: "9999px",
             padding: "12px",
             fontSize: "0.95rem",
             fontWeight: "600",
-            cursor: "pointer",
+            cursor: acceptedTerms ? "pointer" : "not-allowed",
+            opacity: acceptedTerms ? 1 : 0.6,
             border: "1px solid rgba(255, 255, 255, 0.2)",
             background: "rgba(255, 255, 255, 0.08)",
             color: "#ffffff",
@@ -238,6 +373,124 @@ function LoginPage() {
           Need an account? Register here →
         </p>
       </div>
+
+      {/* 🛡️ CREATOR SECURITY CHALLENGE MODAL */}
+      {showChallengeModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px"
+          }}
+        >
+          <div
+            className="liquid-glass animate-fade-rise"
+            style={{
+              background: "rgba(15, 23, 42, 0.95)",
+              border: "1px solid rgba(0, 198, 255, 0.4)",
+              boxShadow: "0 0 50px rgba(0, 198, 255, 0.25)",
+              borderRadius: "24px",
+              padding: "40px 32px",
+              maxWidth: "460px",
+              width: "100%",
+              textAlign: "center"
+            }}
+          >
+            <div style={{ fontSize: "2.75rem", marginBottom: "12px" }}>🛡️</div>
+            <h2 style={{ fontSize: "1.45rem", fontWeight: "700", color: "#ffffff", marginBottom: "8px" }}>
+              Admin Security Challenge
+            </h2>
+            <p style={{ color: "#a1a1aa", fontSize: "0.9rem", marginBottom: "20px", lineHeight: "1.5" }}>
+              Multiple administrative access attempts detected. Please answer the creator's security verification question:
+            </p>
+
+            <div
+              style={{
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(0, 198, 255, 0.25)",
+                padding: "16px 20px",
+                borderRadius: "16px",
+                color: "#00c6ff",
+                fontWeight: "600",
+                fontSize: "1.05rem",
+                marginBottom: "24px",
+                lineHeight: "1.4"
+              }}
+            >
+              "{challengeQuestion}"
+            </div>
+
+            <input
+              type="text"
+              placeholder="Enter nickname..."
+              value={securityAnswer}
+              onChange={(e) => setSecurityAnswer(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "14px 18px",
+                borderRadius: "12px",
+                background: "rgba(0, 0, 0, 0.5)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                color: "#ffffff",
+                marginBottom: "20px",
+                fontSize: "1rem"
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleVerifyChallenge();
+              }}
+              autoFocus
+            />
+
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                className="btn"
+                onClick={handleVerifyChallenge}
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  margin: 0,
+                  padding: "12px",
+                  background: "linear-gradient(135deg, #00c6ff, #0072ff)",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                {loading ? "Verifying..." : "Verify & Unlock"}
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  setShowChallengeModal(false);
+                  setSecurityAnswer("");
+                }}
+                style={{
+                  flex: 1,
+                  margin: 0,
+                  padding: "12px",
+                  background: "rgba(255, 255, 255, 0.1)",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  cursor: "pointer"
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 📜 MODAL READER FOR TERMS */}
+      <LegalDocModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        type="terms"
+      />
     </div>
   );
 }

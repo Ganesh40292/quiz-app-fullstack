@@ -32,7 +32,17 @@ public interface QuestionService {
     Question getQuestionById(Long id);
 
     /* =========================
+       UPDATE QUESTION STATUS (MODERATION)
+    ========================= */
+    Question updateStatus(Long id, String status);
+
+    /* =========================
        GET PAGINATED QUESTIONS
     ========================= */
     org.springframework.data.domain.Page<Question> getAllQuestionsPaginated(org.springframework.data.domain.Pageable pageable);
+
+    /* =========================
+       SEARCH PAGINATED QUESTIONS
+    ========================= */
+    org.springframework.data.domain.Page<Question> searchQuestionsPaginated(String search, org.springframework.data.domain.Pageable pageable);
 }

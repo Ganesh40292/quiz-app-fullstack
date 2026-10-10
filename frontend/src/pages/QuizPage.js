@@ -1,13 +1,15 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import QuestionCard from "../components/QuestionCard";
 import Button from "../components/Button";
-import { getQuestions, submitQuiz, getStats } from "../services/api";
+import { getQuestions, submitQuiz, getStats, checkAnswerApi } from "../services/api";
 import ResultPage from "./ResultPage";
 import { useToast } from "../components/Toast";
 import { QUOTES, getCurrent30MinQuoteIndex } from "../data/quotes";
 import CircularTimer from "../components/CircularTimer";
 import QuestionNavigator from "../components/QuestionNavigator";
 import { soundFx } from "../utils/audio";
+import QuitConfirmationModal from "../components/QuitConfirmationModal";
+import Footer from "../components/Footer";
 
 /* =========================
    ROTATING QUOTE COMPONENT
@@ -91,6 +93,32 @@ function QuizPage() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showQuitModal, setShowQuitModal] = useState(false);
+  const [reviewAnswers, setReviewAnswers] = useState({});
+
+  // Synchronized refs to avoid stale closures during auto-submit & timer expiry
+  const selectedAnswersRef = useRef(selectedAnswers);
+  useEffect(() => {
+    selectedAnswersRef.current = selectedAnswers;
+  }, [selectedAnswers]);
+  const isSubmittingRef = useRef(false);
+
+  // Warning when leaving tab/refreshing mid-quiz
+  useEffect(() => {
+    if (!quizStarted || showResult) return;
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "All the questions you have answered will be deleted if you leave mid-way.";
+      return e.returnValue;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [quizStarted, showResult]);
+
+  const handleConfirmQuit = () => {
+    addToast("Quiz session ended. All answered questions have been deleted.", "info");
+    restartQuiz();
+  };
 
   // Toggle Flag handler
   const toggleFlag = (id) => {
@@ -128,6 +156,7 @@ function QuizPage() {
      START QUIZ
   ========================= */
   const handleStartQuiz = async () => {
+    isSubmittingRef.current = false;
     setLoading(true);
     setQuizStarted(true);
     setCurrentIndex(0);
@@ -162,19 +191,31 @@ function QuizPage() {
      SUBMIT QUIZ
   ========================= */
   const handleSubmit = useCallback(async (forcedAnswers = null) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     try {
-      const answersToSubmit = forcedAnswers || selectedAnswers;
+      // Prioritize explicit argument, fallback to ref to guarantee freshest selections without stale closure
+      const rawAnswers = forcedAnswers || selectedAnswersRef.current || selectedAnswers;
+      const answersToSubmit = {};
+      questions.forEach((q) => {
+        answersToSubmit[q.id] = rawAnswers[q.id] || "";
+      });
+
       const result = await submitQuiz(answersToSubmit);
       const finalScore = result.score ?? result;
 
+      if (result.correctAnswers) {
+        setReviewAnswers(result.correctAnswers);
+      }
       setScore(finalScore);
       setShowResult(true);
       addToast("Quiz submitted successfully!", "success");
     } catch (error) {
       console.error("Submit error:", error);
       addToast("Failed to submit quiz.", "error");
+      isSubmittingRef.current = false;
     }
-  }, [selectedAnswers, addToast]);
+  }, [questions, selectedAnswers, addToast]);
 
   /* =========================
      CHALLENGE MODE: SUDDEN DEATH
@@ -188,31 +229,32 @@ function QuizPage() {
 
     const lastQuestionId = Number(answerKeys[answerKeys.length - 1]);
     const lastAnswer = selectedAnswers[lastQuestionId];
-    const questionObj = questions.find((q) => q.id === lastQuestionId);
 
-    if (questionObj && lastAnswer) {
-      if (lastAnswer.toLowerCase() !== questionObj.correctAnswer.toLowerCase()) {
-        soundFx.playWrong();
-        addToast("❌ Wrong Answer! Sudden Death Triggered!", "error");
-        
-        // Auto submit instantly with current answers
-        handleSubmit(selectedAnswers);
-      } else {
-        soundFx.playCorrect();
-        addToast("✨ Correct! Keep going!", "success");
-      }
+    if (lastQuestionId && lastAnswer) {
+      checkAnswerApi(lastQuestionId, lastAnswer).then((res) => {
+        if (!res.correct) {
+          soundFx.playWrong();
+          addToast("❌ Wrong Answer! Sudden Death Triggered!", "error");
+          handleSubmit(selectedAnswersRef.current || selectedAnswers);
+        } else {
+          soundFx.playCorrect();
+          addToast("✨ Correct! Keep going!", "success");
+        }
+      }).catch((err) => {
+        console.error("Challenge check error:", err);
+      });
     }
-  }, [selectedAnswers, mode, quizStarted, questions, showResult, loading, handleSubmit, addToast]);
+  }, [selectedAnswers, mode, quizStarted, showResult, loading, handleSubmit, addToast]);
 
   /* =========================
-     TIMER LOGIC
+     TIMER LOGIC (AUTOSUBMIT ON EXPIRY)
   ========================= */
   useEffect(() => {
     if (!quizStarted || showResult || loading || mode === "practice") return;
 
-    if (timeLeft === 0) {
-      addToast("⏱️ Time's up!", "info");
-      handleSubmit();
+    if (timeLeft <= 0) {
+      addToast("⏱️ Time's up! Auto-submitting answers...", "info");
+      handleSubmit(selectedAnswersRef.current);
       return;
     }
 
@@ -231,7 +273,9 @@ function QuizPage() {
      RESTART / RESET
   ========================= */
   const restartQuiz = () => {
+    isSubmittingRef.current = false;
     setSelectedAnswers({});
+    selectedAnswersRef.current = {};
     setScore(null);
     setShowResult(false);
     setQuizStarted(false);
@@ -251,6 +295,7 @@ function QuizPage() {
         restartQuiz={restartQuiz}
         questions={questions}
         selectedAnswers={selectedAnswers}
+        correctAnswers={reviewAnswers}
       />
     );
   }
@@ -260,7 +305,7 @@ function QuizPage() {
   ========================= */
   if (!quizStarted) {
     return (
-      <div className="relative min-h-screen overflow-hidden text-foreground flex flex-col justify-between" style={{ minHeight: "100vh", position: "relative" }}>
+      <div className="relative min-h-screen text-foreground flex flex-col justify-between" style={{ minHeight: "100vh", position: "relative", display: "flex", flexDirection: "column" }}>
         
         {/* 🎥 FULLSCREEN LOOPING BACKGROUND VIDEO */}
         <video
@@ -287,8 +332,8 @@ function QuizPage() {
 
         {/* 🌌 CINEMATIC HERO CONTENT CONTAINER */}
         <div
-          className="hero-content-wrapper relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-20 max-w-7xl mx-auto"
-          style={{ position: "relative", zIndex: 10, maxWidth: "1280px", margin: "0 auto", padding: "40px 24px 80px" }}
+          className="hero-content-wrapper relative z-10 flex flex-col items-center text-center px-6 pt-16 pb-12 max-w-7xl mx-auto"
+          style={{ position: "relative", zIndex: 10, maxWidth: "1280px", margin: "0 auto", padding: "40px 24px 40px", flex: 1, width: "100%" }}
         >
           {/* H1 CINEMATIC TYPOGRAPHY */}
           <h1
@@ -442,6 +487,9 @@ function QuizPage() {
             </button>
           </div>
         </div>
+
+        {/* 🌟 NATURAL & FULL-WIDTH FOOTER ANCHORED TO BOTTOM OF HOME PAGE */}
+        <Footer />
       </div>
     );
   }
@@ -455,6 +503,41 @@ function QuizPage() {
   return (
     <div className="container" style={{ maxWidth: "800px", margin: "0 auto" }}>
       
+      {/* 🛑 QUIZ TOP BAR WITH LEAVE BUTTON */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", padding: "0 4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "0.85rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", color: "#00c6ff" }}>
+            {mode.toUpperCase()} MODE
+          </span>
+          {category && category !== "All" && (
+            <span style={{ fontSize: "0.78rem", padding: "3px 10px", borderRadius: "8px", background: "rgba(255, 255, 255, 0.08)", color: "#cbd5e1", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
+              {category}
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowQuitModal(true)}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "9999px",
+            border: "1px solid rgba(239, 68, 68, 0.4)",
+            background: "rgba(239, 68, 68, 0.12)",
+            color: "#ef4444",
+            fontSize: "0.82rem",
+            fontWeight: "600",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "all 0.2s ease"
+          }}
+        >
+          🚪 Leave Quiz
+        </button>
+      </div>
+
       {/* ⏱️ ANIMATED CIRCULAR TIMER (hidden in practice mode) */}
       {mode !== "practice" && (
         <CircularTimer timeLeft={timeLeft} totalTime={totalTime} />
@@ -556,6 +639,14 @@ function QuizPage() {
           </div>
         </div>
       )}
+
+      {/* 🚪 DOUBLE CONFIRMATION QUIT MODAL */}
+      <QuitConfirmationModal
+        isOpen={showQuitModal}
+        onClose={() => setShowQuitModal(false)}
+        onConfirm={handleConfirmQuit}
+        answeredCount={answered}
+      />
     </div>
   );
 }

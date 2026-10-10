@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { registerUser, googleLogin } from "../services/api";
 import ShaderBackground from "../components/ShaderBackground";
+import LegalDocModal from "../components/LegalDocModal";
 
 function RegisterPage() {
   const [form, setForm] = useState({
@@ -9,6 +10,8 @@ function RegisterPage() {
     role: "USER"
   });
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [modalType, setModalType] = useState(null); // 'terms' | 'privacy' | null
 
   /* =========================
      GOOGLE OAUTH HANDLER
@@ -53,6 +56,11 @@ function RegisterPage() {
      GOOGLE OAUTH HANDLER & CLICK
   ========================= */
   const handleGoogleClick = () => {
+    if (!acceptedTerms) {
+      alert("Please accept the Terms & Conditions and Privacy Policy before continuing with Google.");
+      return;
+    }
+
     const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || "349278238147-e2j6a56t4kfqgqlvsq9iq4dodm4j0b4m.apps.googleusercontent.com";
     
     if (window.google?.accounts?.id) {
@@ -89,6 +97,11 @@ function RegisterPage() {
   };
 
   const handleRegister = async () => {
+    if (!acceptedTerms) {
+      alert("Please accept the Terms & Conditions and Privacy Policy to proceed with registration.");
+      return;
+    }
+
     if (!form.username || !form.password) {
       alert("Enter username & password");
       return;
@@ -142,16 +155,79 @@ function RegisterPage() {
         <input type="password" name="password" aria-label="Choose Password" autoComplete="new-password" placeholder="Choose Password" value={form.password} onChange={handleChange} />
         
         <label htmlFor="role-select" style={{ display: "block", textAlign: "left", fontSize: "13px", marginTop: "12px", color: "#a1a1aa" }}>Account Role:</label>
-        <select id="role-select" name="role" aria-label="Account Role" value={form.role} onChange={handleChange} style={{ margin: "6px 0 18px 0", width: "100%" }}>
+        <select id="role-select" name="role" aria-label="Account Role" value={form.role} onChange={handleChange} style={{ margin: "6px 0 14px 0", width: "100%" }}>
           <option value="USER">👤 Regular User (Take Quizzes)</option>
           <option value="ADMIN">👑 Admin (Manage Questions & CRUD)</option>
         </select>
 
+        {/* 📜 MANDATORY TERMS & PRIVACY CHECKBOX */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", margin: "14px 0 18px", textAlign: "left" }}>
+          <input
+            type="checkbox"
+            id="register-terms"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            style={{
+              marginTop: "3px",
+              width: "18px",
+              height: "18px",
+              accentColor: "#00c6ff",
+              cursor: "pointer",
+              flexShrink: 0
+            }}
+          />
+          <label htmlFor="register-terms" style={{ fontSize: "0.83rem", color: "#cbd5e1", lineHeight: "1.45", cursor: "pointer" }}>
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setModalType("terms"); }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#00c6ff",
+                padding: 0,
+                textDecoration: "underline",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "0.83rem"
+              }}
+            >
+              Terms & Conditions
+            </button>{" "}
+            and{" "}
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setModalType("privacy"); }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#00c6ff",
+                padding: 0,
+                textDecoration: "underline",
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: "0.83rem"
+              }}
+            >
+              Privacy Policy
+            </button>
+            .
+          </label>
+        </div>
+
         <button
           className="btn liquid-glass hover:scale-[1.03]"
           onClick={handleRegister}
-          disabled={loading}
-          style={{ width: "100%", borderRadius: "9999px", padding: "14px", fontSize: "1rem", fontWeight: "500", cursor: "pointer" }}
+          disabled={loading || !acceptedTerms}
+          style={{
+            width: "100%",
+            borderRadius: "9999px",
+            padding: "14px",
+            fontSize: "1rem",
+            fontWeight: "500",
+            cursor: acceptedTerms && !loading ? "pointer" : "not-allowed",
+            opacity: acceptedTerms && !loading ? 1 : 0.6
+          }}
         >
           {loading ? "Registering..." : "Register"}
         </button>
@@ -168,13 +244,15 @@ function RegisterPage() {
           type="button"
           className="liquid-glass hover:scale-[1.02]"
           onClick={handleGoogleClick}
+          disabled={!acceptedTerms}
           style={{
             width: "100%",
             borderRadius: "9999px",
             padding: "12px",
             fontSize: "0.95rem",
             fontWeight: "600",
-            cursor: "pointer",
+            cursor: acceptedTerms ? "pointer" : "not-allowed",
+            opacity: acceptedTerms ? 1 : 0.6,
             border: "1px solid rgba(255, 255, 255, 0.2)",
             background: "rgba(255, 255, 255, 0.08)",
             color: "#ffffff",
@@ -201,6 +279,13 @@ function RegisterPage() {
           Already have an account? Login here →
         </p>
       </div>
+
+      {/* 📜 MODAL READER FOR TERMS & PRIVACY */}
+      <LegalDocModal
+        isOpen={!!modalType}
+        onClose={() => setModalType(null)}
+        type={modalType}
+      />
     </div>
   );
 }
