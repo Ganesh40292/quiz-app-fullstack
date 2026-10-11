@@ -183,10 +183,14 @@ function App() {
             }
           />
 
-          {/* 🏆 LEADERBOARD (Public) */}
+          {/* 🏆 LEADERBOARD (Protected - Requires Login) */}
           <Route
             path="/leaderboard"
-            element={<LeaderboardPage />}
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
+              </ProtectedRoute>
+            }
           />
 
           {/* 👤 MY HISTORY (PROTECTED) */}

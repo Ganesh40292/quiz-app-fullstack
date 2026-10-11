@@ -130,28 +130,40 @@ function Footer() {
               Navigation
             </h4>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {[
-                { to: "/", label: "Start Quiz" },
-                { to: "/leaderboard", label: "Leaderboard" },
-                { to: "/history", label: "My History" },
-                { to: "/help", label: "Help & Support" }
-              ].map((link) => (
-                <li key={link.to} style={{ marginBottom: "10px" }}>
-                  <Link
-                    to={link.to}
-                    style={{
-                      color: "#94a3b8",
-                      textDecoration: "none",
-                      fontSize: "0.88rem",
-                      transition: "color 0.2s ease"
-                    }}
-                    onMouseEnter={(e) => (e.target.style.color = "#00c6ff")}
-                    onMouseLeave={(e) => (e.target.style.color = "#94a3b8")}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {(() => {
+                const token = localStorage.getItem("token");
+                const isLoggedIn = !!token && token !== "null" && token !== "undefined";
+                const links = isLoggedIn
+                  ? [
+                      { to: "/", label: "Start Quiz" },
+                      { to: "/leaderboard", label: "Leaderboard" },
+                      { to: "/history", label: "My History" },
+                      { to: "/help", label: "Help & Support" }
+                    ]
+                  : [
+                      { to: "/login", label: "Login" },
+                      { to: "/register", label: "Create Account" },
+                      { to: "/help", label: "Help & Support" }
+                    ];
+
+                return links.map((link) => (
+                  <li key={link.to} style={{ marginBottom: "10px" }}>
+                    <Link
+                      to={link.to}
+                      style={{
+                        color: "#94a3b8",
+                        textDecoration: "none",
+                        fontSize: "0.88rem",
+                        transition: "color 0.2s ease"
+                      }}
+                      onMouseEnter={(e) => (e.target.style.color = "#00c6ff")}
+                      onMouseLeave={(e) => (e.target.style.color = "#94a3b8")}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ));
+              })()}
             </ul>
           </div>
 

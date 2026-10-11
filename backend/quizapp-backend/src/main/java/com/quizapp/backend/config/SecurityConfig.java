@@ -70,7 +70,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/quiz/stats").permitAll()
                 .requestMatchers("/api/quiz/submit").permitAll()
                 .requestMatchers("/api/quiz/check-answer").permitAll()
-                .requestMatchers("/api/quiz/leaderboard").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
