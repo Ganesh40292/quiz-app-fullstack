@@ -11,4 +11,7 @@ public interface ResultRepository extends JpaRepository<Result, Long> {
     List<Result> findByUserId(Long userId);
 
     List<Result> findTop10ByOrderByScoreDesc();
+
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Result r WHERE r.totalQuestions > 0 ORDER BY r.score DESC")
+    List<Result> findTopResultsWithValidQuestions();
 }

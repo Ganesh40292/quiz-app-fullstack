@@ -9,7 +9,38 @@ function LeaderboardPage() {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       const data = await getLeaderboard();
-      setLeaderboard(data);
+      if (Array.isArray(data)) {
+        // Filter out empty 0/0 test attempts
+        const valid = data.filter((item) => item && (item.totalQuestions > 0 || item.score > 0));
+
+        // Group by user, preserving the single highest score attempt
+        const userMap = new Map();
+        for (const entry of valid) {
+          const key = entry.user?.id || (entry.user?.username || "").toLowerCase();
+          if (!key) continue;
+          const existing = userMap.get(key);
+          if (!existing) {
+            userMap.set(key, entry);
+          } else {
+            const existingPct = existing.totalQuestions ? existing.score / existing.totalQuestions : 0;
+            const currentPct = entry.totalQuestions ? entry.score / entry.totalQuestions : 0;
+            if (entry.score > existing.score || (entry.score === existing.score && currentPct > existingPct)) {
+              userMap.set(key, entry);
+            }
+          }
+        }
+
+        const sorted = Array.from(userMap.values()).sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          const pctA = a.totalQuestions ? a.score / a.totalQuestions : 0;
+          const pctB = b.totalQuestions ? b.score / b.totalQuestions : 0;
+          return pctB - pctA;
+        });
+
+        setLeaderboard(sorted);
+      } else {
+        setLeaderboard([]);
+      }
       setLoading(false);
     };
     fetchLeaderboard();

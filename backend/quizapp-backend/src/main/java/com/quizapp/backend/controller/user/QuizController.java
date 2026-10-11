@@ -129,7 +129,7 @@ public class QuizController {
     ========================= */
     @GetMapping("/leaderboard")
     public List<Result> getLeaderboard() {
-        return resultRepository.findTop10ByOrderByScoreDesc();
+        return resultRepository.findTopResultsWithValidQuestions();
     }
 
     /* =========================
