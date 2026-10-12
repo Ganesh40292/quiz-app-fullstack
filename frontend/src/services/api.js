@@ -163,10 +163,13 @@ export const getLeaderboard = async () => {
     const res = await fetch(`${BASE_URL}/quiz/leaderboard`, {
       headers: getAuthHeaders(),
     });
-    checkAuthStatus(res);
+    if (!res.ok) {
+      console.warn("Could not fetch leaderboard, status:", res.status);
+      return [];
+    }
     return await res.json();
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching leaderboard:", err);
     return [];
   }
 };

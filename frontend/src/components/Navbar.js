@@ -37,12 +37,10 @@ function Navbar() {
           {isAdmin ? "🧪 Test Quiz" : "Home"}
         </NavLink>
 
-        {/* 🏆 Leaderboard (Only when logged in) */}
-        {isLoggedIn && (
-          <NavLink to="/leaderboard" className={getLinkClass}>
-            Leaderboard
-          </NavLink>
-        )}
+        {/* 🏆 Leaderboard (Always visible) */}
+        <NavLink to="/leaderboard" className={getLinkClass}>
+          Leaderboard
+        </NavLink>
 
         {/* 👑 Admin Dashboard (Admin Only) */}
         {isAdmin && (
