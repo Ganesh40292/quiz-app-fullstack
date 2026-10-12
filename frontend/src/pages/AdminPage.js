@@ -1145,16 +1145,16 @@ function AdminPage() {
                     }}
                   >
                     <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <table style={{ width: "100%", minWidth: "980px", borderCollapse: "separate", borderSpacing: 0 }}>
                         <thead>
-                          <tr style={{ background: "rgba(255, 255, 255, 0.04)", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>#</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>User</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Email</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Role</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Registered Time</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Quiz Activity</th>
-                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Status</th>
+                          <tr style={{ background: "rgba(255, 255, 255, 0.05)", borderBottom: "1px solid rgba(255, 255, 255, 0.12)" }}>
+                            <th style={{ width: "70px", padding: "16px 14px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>#</th>
+                            <th style={{ minWidth: "200px", padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>User</th>
+                            <th style={{ minWidth: "220px", padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>Email</th>
+                            <th style={{ width: "140px", padding: "16px 16px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>Role</th>
+                            <th style={{ minWidth: "210px", padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>Registered Time</th>
+                            <th style={{ width: "160px", padding: "16px 16px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>Quiz Activity</th>
+                            <th style={{ width: "120px", padding: "16px 16px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>Status</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1187,17 +1187,18 @@ function AdminPage() {
                                 onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0, 198, 255, 0.05)")}
                                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                               >
-                                <td style={{ padding: "16px 20px", color: "#64748b", fontSize: "0.85rem", fontWeight: "600" }}>
+                                <td style={{ width: "70px", padding: "16px 14px", color: "#64748b", fontSize: "0.85rem", fontWeight: "600", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
                                   #{u.id}
                                 </td>
 
-                                <td style={{ padding: "16px 20px" }}>
+                                <td style={{ minWidth: "200px", padding: "16px 20px", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                                     <div
                                       style={{
                                         width: "36px",
                                         height: "36px",
                                         borderRadius: "50%",
+                                        flexShrink: 0,
                                         background: isAdmin
                                           ? "linear-gradient(135deg, #00c6ff, #0072ff)"
                                           : "linear-gradient(135deg, #a855f7, #6366f1)",
@@ -1212,20 +1213,26 @@ function AdminPage() {
                                     >
                                       {initial}
                                     </div>
-                                    <span style={{ fontWeight: "600", color: "#ffffff", fontSize: "0.95rem" }}>
+                                    <span style={{ fontWeight: "600", color: "#ffffff", fontSize: "0.93rem", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                       {u.username}
                                     </span>
                                   </div>
                                 </td>
 
-                                <td style={{ padding: "16px 20px", color: "#cbd5e1", fontSize: "0.88rem" }}>
-                                  {u.email || "—"}
+                                <td style={{ minWidth: "220px", padding: "16px 20px", color: "#cbd5e1", fontSize: "0.88rem", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                                  <span style={{ display: "inline-block", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {u.email || "—"}
+                                  </span>
                                 </td>
 
-                                <td style={{ padding: "16px 20px" }}>
+                                <td style={{ width: "140px", padding: "16px 16px", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
                                   <span
                                     style={{
-                                      padding: "4px 10px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      minWidth: "96px",
+                                      padding: "5px 12px",
                                       borderRadius: "10px",
                                       fontSize: "0.75rem",
                                       fontWeight: "700",
@@ -1240,35 +1247,53 @@ function AdminPage() {
                                   </span>
                                 </td>
 
-                                <td style={{ padding: "16px 20px" }}>
-                                  <div style={{ display: "flex", flexDirection: "column" }}>
-                                    <span style={{ color: "#ffffff", fontSize: "0.88rem", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <span>📅</span> {formattedDate}
+                                <td style={{ minWidth: "210px", padding: "16px 20px", textAlign: "left", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                                  <div style={{ display: "inline-flex", flexDirection: "column", gap: "4px" }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#f8fafc", fontSize: "0.86rem", fontWeight: "600" }}>
+                                      <span style={{ fontSize: "0.85rem", opacity: 0.9 }}>📅</span>
+                                      <span>{formattedDate}</span>
+                                    </div>
+                                    {formattedTime ? (
+                                      <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#94a3b8", fontSize: "0.75rem", fontWeight: "500" }}>
+                                        <span style={{ fontSize: "0.85rem", opacity: 0.9 }}>🕒</span>
+                                        <span>{formattedTime}</span>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </td>
+
+                                <td style={{ width: "160px", padding: "16px 16px", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                                  <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                                    <span style={{ fontSize: "0.86rem", color: "#00ff88", fontWeight: "700" }}>
+                                      {u.totalQuizzes || 0} {u.totalQuizzes === 1 ? "Quiz" : "Quizzes"}
                                     </span>
-                                    {formattedTime && (
-                                      <span style={{ color: "#94a3b8", fontSize: "0.76rem", marginTop: "2px", marginLeft: "22px" }}>
-                                        🕒 {formattedTime}
+                                    {u.highestScore > 0 ? (
+                                      <span style={{ fontSize: "0.72rem", color: "#38bdf8", background: "rgba(56, 189, 248, 0.12)", border: "1px solid rgba(56, 189, 248, 0.25)", padding: "1px 8px", borderRadius: "8px", fontWeight: "600" }}>
+                                        Top: {u.highestScore} pts
                                       </span>
+                                    ) : (
+                                      <span style={{ fontSize: "0.72rem", color: "#64748b" }}>0 attempts</span>
                                     )}
                                   </div>
                                 </td>
 
-                                <td style={{ padding: "16px 20px" }}>
-                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                    <span style={{ fontSize: "0.85rem", color: "#00ff88", fontWeight: "600" }}>
-                                      {u.totalQuizzes || 0} {u.totalQuizzes === 1 ? "quiz" : "quizzes"}
-                                    </span>
-                                    {u.highestScore > 0 && (
-                                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                                        (Top: {u.highestScore})
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-
-                                <td style={{ padding: "16px 20px" }}>
-                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#10b981", fontWeight: "600" }}>
-                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
+                                <td style={{ width: "120px", padding: "16px 16px", textAlign: "center", verticalAlign: "middle", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                                  <span
+                                    style={{
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      gap: "6px",
+                                      padding: "5px 12px",
+                                      borderRadius: "20px",
+                                      fontSize: "0.76rem",
+                                      fontWeight: "700",
+                                      color: "#10b981",
+                                      background: "rgba(16, 185, 129, 0.12)",
+                                      border: "1px solid rgba(16, 185, 129, 0.3)"
+                                    }}
+                                  >
+                                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981" }} />
                                     Active
                                   </span>
                                 </td>
@@ -1277,6 +1302,30 @@ function AdminPage() {
                           })}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Table Footer Summary Bar */}
+                    <div
+                      style={{
+                        padding: "14px 22px",
+                        background: "rgba(255, 255, 255, 0.02)",
+                        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                        fontSize: "0.82rem",
+                        color: "#94a3b8"
+                      }}
+                    >
+                      <span>
+                        Showing <strong style={{ color: "#ffffff" }}>{filteredUsers.length}</strong> of <strong style={{ color: "#ffffff" }}>{users.length}</strong> registered users
+                      </span>
+                      <div style={{ display: "flex", gap: "16px" }}>
+                        <span>👑 Admins: <strong style={{ color: "#00c6ff" }}>{filteredUsers.filter((u) => (u.role || "").toUpperCase() === "ADMIN").length}</strong></span>
+                        <span>👤 Standard Users: <strong style={{ color: "#ffffff" }}>{filteredUsers.filter((u) => (u.role || "").toUpperCase() === "USER").length}</strong></span>
+                      </div>
                     </div>
                   </div>
                 );
