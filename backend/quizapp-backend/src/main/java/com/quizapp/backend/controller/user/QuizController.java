@@ -163,14 +163,18 @@ public class QuizController {
         
         long totalResults = results.size();
         double averageScore = 0.0;
+        long validResultsCount = 0;
         if (totalResults > 0) {
             double sum = 0;
             for (Result r : results) {
                 if (r.getTotalQuestions() > 0) {
                     sum += ((double) r.getScore() / r.getTotalQuestions()) * 100;
+                    validResultsCount++;
                 }
             }
-            averageScore = sum / totalResults;
+            if (validResultsCount > 0) {
+                averageScore = sum / validResultsCount;
+            }
         }
 
         Map<String, Long> categoryDistribution = new HashMap<>();

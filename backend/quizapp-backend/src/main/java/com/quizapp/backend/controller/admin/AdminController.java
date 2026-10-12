@@ -13,30 +13,69 @@ import com.quizapp.backend.service.interfaces.QuestionService;
 public class AdminController {
 
     private final QuestionService questionService;
+    private final com.quizapp.backend.repository.UserRepository userRepository;
+    private final com.quizapp.backend.repository.ResultRepository resultRepository;
 
     /* =========================
        CONSTRUCTOR INJECTION
     ========================= */
-    public AdminController(QuestionService questionService) {
+    public AdminController(
+            QuestionService questionService,
+            com.quizapp.backend.repository.UserRepository userRepository,
+            com.quizapp.backend.repository.ResultRepository resultRepository) {
         this.questionService = questionService;
+        this.userRepository = userRepository;
+        this.resultRepository = resultRepository;
     }
 
     /* =========================
-       GET ALL QUESTIONS
+       GET ALL QUESTIONS (WITH OPTIONAL SEARCH, CATEGORY & DIFFICULTY FILTERS)
     ========================= */
     @GetMapping("/questions")
     public Object getAllQuestions(
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String difficulty) {
         if (page != null && size != null) {
             org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-            if (search != null && !search.trim().isEmpty()) {
-                return questionService.searchQuestionsPaginated(search.trim(), pageable);
-            }
-            return questionService.getAllQuestionsPaginated(pageable);
+            return questionService.searchFilteredPaginated(search, category, difficulty, pageable);
         }
         return questionService.getAllQuestions();
+    }
+
+    /* =========================
+       GET ALL REGISTERED USERS (ADMIN ONLY)
+    ========================= */
+    @GetMapping("/users")
+    public List<com.quizapp.backend.dto.response.UserSummaryDto> getAllUsers() {
+        List<com.quizapp.backend.model.User> users = userRepository.findAll(
+                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "id")
+        );
+
+        List<com.quizapp.backend.dto.response.UserSummaryDto> summaryList = new java.util.ArrayList<>();
+
+        for (com.quizapp.backend.model.User user : users) {
+            List<com.quizapp.backend.model.Result> userResults = resultRepository.findByUserId(user.getId());
+            long totalQuizzes = userResults.size();
+            int highestScore = userResults.stream()
+                    .mapToInt(com.quizapp.backend.model.Result::getScore)
+                    .max()
+                    .orElse(0);
+
+            summaryList.add(new com.quizapp.backend.dto.response.UserSummaryDto(
+                    user.getId(),
+                    user.getUsername(),
+                    user.getEmail(),
+                    user.getRole(),
+                    user.getCreatedAt(),
+                    totalQuizzes,
+                    highestScore
+            ));
+        }
+
+        return summaryList;
     }
 
     /* =========================

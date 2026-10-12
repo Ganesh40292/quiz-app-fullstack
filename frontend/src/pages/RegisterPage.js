@@ -112,7 +112,7 @@ function RegisterPage() {
       const data = await registerUser(form);
 
       if (data.status === "success") {
-        alert(`Registration successful as ${form.role}! Please login.`);
+        alert("Registration successful! Please login.");
         window.location.href = "/login";
       } else {
         alert(data.message || "Registration failed");
@@ -153,12 +153,6 @@ function RegisterPage() {
 
         <input type="text" name="username" aria-label="Choose Username" autoComplete="username" placeholder="Choose Username" value={form.username} onChange={handleChange} />
         <input type="password" name="password" aria-label="Choose Password" autoComplete="new-password" placeholder="Choose Password" value={form.password} onChange={handleChange} />
-        
-        <label htmlFor="role-select" style={{ display: "block", textAlign: "left", fontSize: "13px", marginTop: "12px", color: "#a1a1aa" }}>Account Role:</label>
-        <select id="role-select" name="role" aria-label="Account Role" value={form.role} onChange={handleChange} style={{ margin: "6px 0 14px 0", width: "100%" }}>
-          <option value="USER">👤 Regular User (Take Quizzes)</option>
-          <option value="ADMIN">👑 Admin (Manage Questions & CRUD)</option>
-        </select>
 
         {/* 📜 MANDATORY TERMS & PRIVACY CHECKBOX */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", margin: "14px 0 18px", textAlign: "left" }}>

@@ -22,4 +22,15 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     // 🔍 Global Paginated Search
     org.springframework.data.domain.Page<Question> findByQuestionContainingIgnoreCase(String question, org.springframework.data.domain.Pageable pageable);
+
+    // 🔍 Multi-field Filtered Search (Search text, Category, Difficulty)
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Question q WHERE " +
+           "(:search IS NULL OR :search = '' OR LOWER(q.question) LIKE LOWER(CONCAT('%', :search, '%'))) AND " +
+           "(:category IS NULL OR :category = '' OR :category = 'All' OR LOWER(q.category) = LOWER(:category)) AND " +
+           "(:difficulty IS NULL OR :difficulty = '' OR :difficulty = 'All' OR LOWER(q.difficulty) = LOWER(:difficulty))")
+    org.springframework.data.domain.Page<Question> searchFilteredPaginated(
+            @org.springframework.data.repository.query.Param("search") String search,
+            @org.springframework.data.repository.query.Param("category") String category,
+            @org.springframework.data.repository.query.Param("difficulty") String difficulty,
+            org.springframework.data.domain.Pageable pageable);
 }

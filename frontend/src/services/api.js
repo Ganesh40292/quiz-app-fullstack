@@ -259,11 +259,17 @@ export const rejectQuestion = async (id) => {
   return await res.json();
 };
 
-export const getAdminQuestionsPaginated = async (page = 0, size = 5, search = "") => {
+export const getAdminQuestionsPaginated = async (page = 0, size = 5, search = "", category = "", difficulty = "") => {
   try {
     let url = `${BASE_URL}/admin/questions?page=${page}&size=${size}`;
     if (search && search.trim()) {
       url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+    if (category && category.trim() && category !== "All") {
+      url += `&category=${encodeURIComponent(category.trim())}`;
+    }
+    if (difficulty && difficulty.trim() && difficulty !== "All") {
+      url += `&difficulty=${encodeURIComponent(difficulty.trim())}`;
     }
     const res = await fetch(url, {
       headers: getAuthHeaders(),
@@ -274,5 +280,22 @@ export const getAdminQuestionsPaginated = async (page = 0, size = 5, search = ""
   } catch (error) {
     console.error(error);
     return { content: [], totalPages: 0 };
+  }
+};
+
+/* =========================
+   REGISTERED USERS (ADMIN ONLY)
+========================= */
+export const getAdminUsers = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/admin/users`, {
+      headers: getAuthHeaders(),
+    });
+    checkAuthStatus(res);
+    if (!res.ok) throw new Error("Failed to fetch registered users");
+    return await res.json();
+  } catch (error) {
+    console.error("Error fetching registered users:", error);
+    return [];
   }
 };

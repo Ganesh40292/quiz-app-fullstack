@@ -367,10 +367,10 @@ function LoginPage() {
         </button>
 
         <p
-          style={{ marginTop: "20px", fontSize: "14px", cursor: "pointer", color: "#00c6ff", fontWeight: "500" }}
+          style={{ marginTop: "20px", fontSize: "14px", cursor: "pointer", color: "#a1a1aa", fontWeight: "400" }}
           onClick={() => window.location.href = "/register"}
         >
-          Need an account? Register here →
+          Don't have an account? <span style={{ color: "#00c6ff", fontWeight: "600", textDecoration: "underline" }}>Create an account →</span>
         </p>
       </div>
 

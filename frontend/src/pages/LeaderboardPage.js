@@ -67,7 +67,7 @@ function LeaderboardPage() {
             marginBottom: "8px"
           }}
         >
-          🏆 Global Leaderboard
+          🏆 Leaderboard 🏆
         </h1>
         <p style={{ color: "#a1a1aa", fontSize: "1.05rem" }}>
           Top scholars and high achievers competing for global dominance.

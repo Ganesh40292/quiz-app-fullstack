@@ -45,4 +45,9 @@ public interface QuestionService {
        SEARCH PAGINATED QUESTIONS
     ========================= */
     org.springframework.data.domain.Page<Question> searchQuestionsPaginated(String search, org.springframework.data.domain.Pageable pageable);
+
+    /* =========================
+       SEARCH & FILTER PAGINATED QUESTIONS
+    ========================= */
+    org.springframework.data.domain.Page<Question> searchFilteredPaginated(String search, String category, String difficulty, org.springframework.data.domain.Pageable pageable);
 }

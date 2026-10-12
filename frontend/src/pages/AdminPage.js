@@ -8,22 +8,26 @@ import {
   approveQuestion,
   rejectQuestion,
   getQuestions,
-  submitQuiz
+  submitQuiz,
+  getAdminUsers
 } from "../services/api";
 import DashboardCharts from "../components/DashboardCharts";
 import QuestionCard from "../components/QuestionCard";
 import { useToast } from "../components/Toast";
 import QuitConfirmationModal from "../components/QuitConfirmationModal";
+import ShaderBackground from "../components/ShaderBackground";
 
 function AdminPage() {
   const { addToast } = useToast();
   
-  // Navigation tabs
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, questions, testquiz
+  // Navigation tabs: dashboard, questions, users, testquiz
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   // Paginated questions list state
   const [questions, setQuestions] = useState([]);
   const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [filterDifficulty, setFilterDifficulty] = useState("All");
   const [editId, setEditId] = useState(null);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
@@ -32,6 +36,12 @@ function AdminPage() {
   const [page, setPage] = useState(0);
   const [size] = useState(5); // 5 questions per page
   const [totalPages, setTotalPages] = useState(0);
+
+  // Registered Users management state
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("ALL");
 
   const [form, setForm] = useState({
     question: "",
@@ -45,12 +55,12 @@ function AdminPage() {
   });
 
   /* =========================
-     FETCH PAGINATED QUESTIONS
+     FETCH PAGINATED QUESTIONS (WITH MULTI-FILTER)
   ========================= */
   const fetchQuestions = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getAdminQuestionsPaginated(page, size, search);
+      const data = await getAdminQuestionsPaginated(page, size, search, filterCategory, filterDifficulty);
       
       // Spring Page object has content and totalPages
       setQuestions(data.content || []);
@@ -61,7 +71,23 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, search, addToast]);
+  }, [page, size, search, filterCategory, filterDifficulty, addToast]);
+
+  /* =========================
+     FETCH REGISTERED USERS
+  ========================= */
+  const fetchUsers = useCallback(async () => {
+    try {
+      setUsersLoading(true);
+      const data = await getAdminUsers();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching registered users:", err);
+      addToast("Failed to fetch registered users.", "error");
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [addToast]);
 
   /* =========================
      FETCH STATS
@@ -78,9 +104,11 @@ function AdminPage() {
   useEffect(() => {
     if (activeTab === "questions") {
       fetchQuestions();
+    } else if (activeTab === "users") {
+      fetchUsers();
     }
     fetchStats();
-  }, [page, activeTab, fetchQuestions]);
+  }, [page, activeTab, fetchQuestions, fetchUsers]);
 
   /* =========================
      HANDLE INPUT
@@ -274,10 +302,12 @@ function AdminPage() {
   };
 
   return (
-    <div className="admin-bg-wrapper">
-      <div className="admin-bg-overlay" />
+    <div className="admin-bg-wrapper" style={{ position: "relative", minHeight: "100vh" }}>
+      {/* 🌌 3D WEBGL SHADER BACKGROUND */}
+      <ShaderBackground />
+      <div className="admin-bg-overlay" style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }} />
       
-      <div className="admin-layout">
+      <div className="admin-layout" style={{ position: "relative", zIndex: 2 }}>
         
         {/* 🔵 SIDEBAR */}
         <div className="sidebar">
@@ -293,6 +323,12 @@ function AdminPage() {
             onClick={() => setActiveTab("questions")}
           >
             📋 Questions
+          </p>
+          <p
+            className={activeTab === "users" ? "active" : ""}
+            onClick={() => setActiveTab("users")}
+          >
+            👥 Registered Users
           </p>
           <p
             className={activeTab === "testquiz" ? "active" : ""}
@@ -748,16 +784,100 @@ function AdminPage() {
                 </div>
               </div>
 
-              {/* SEARCH (SERVER-WIDE) */}
-              <input
-                style={{ marginTop: "20px" }}
-                placeholder="🔍 Search question statement across entire question bank..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(0);
+              {/* 🔍 FILTER & SEARCH TOOLBAR (SEARCH, CATEGORY, DIFFICULTY) */}
+              <div
+                className="liquid-glass"
+                style={{
+                  marginTop: "24px",
+                  marginBottom: "20px",
+                  padding: "16px 20px",
+                  borderRadius: "16px",
+                  background: "rgba(15, 23, 42, 0.55)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "14px",
+                  alignItems: "center",
+                  justifyContent: "space-between"
                 }}
-              />
+              >
+                {/* Search Text Input */}
+                <div style={{ flex: "1 1 260px" }}>
+                  <input
+                    style={{ margin: 0, width: "100%", height: "44px", borderRadius: "10px" }}
+                    placeholder="🔍 Search questions across statement..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(0);
+                    }}
+                  />
+                </div>
+
+                {/* Category Filter Dropdown */}
+                <div style={{ flex: "0 1 180px" }}>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => {
+                      setFilterCategory(e.target.value);
+                      setPage(0);
+                    }}
+                    style={{ margin: 0, width: "100%", height: "44px", borderRadius: "10px" }}
+                  >
+                    <option value="All">📂 All Categories</option>
+                    {stats?.categoryDistribution &&
+                      Object.keys(stats.categoryDistribution).map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat} ({stats.categoryDistribution[cat]})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                {/* Difficulty Filter Dropdown */}
+                <div style={{ flex: "0 1 170px" }}>
+                  <select
+                    value={filterDifficulty}
+                    onChange={(e) => {
+                      setFilterDifficulty(e.target.value);
+                      setPage(0);
+                    }}
+                    style={{ margin: 0, width: "100%", height: "44px", borderRadius: "10px" }}
+                  >
+                    <option value="All">⚡ All Difficulties</option>
+                    <option value="Easy">🟢 Easy</option>
+                    <option value="Medium">🟡 Medium</option>
+                    <option value="Hard">🔴 Hard</option>
+                  </select>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(search || filterCategory !== "All" || filterDifficulty !== "All") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setFilterCategory("All");
+                      setFilterDifficulty("All");
+                      setPage(0);
+                    }}
+                    style={{
+                      height: "44px",
+                      padding: "0 16px",
+                      borderRadius: "10px",
+                      background: "rgba(239, 68, 68, 0.15)",
+                      border: "1px solid rgba(239, 68, 68, 0.35)",
+                      color: "#ef4444",
+                      fontWeight: "600",
+                      fontSize: "0.85rem",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap"
+                    }}
+                  >
+                    ✕ Reset
+                  </button>
+                )}
+              </div>
 
               {/* QUESTIONS LIST */}
               {loading ? (
@@ -878,7 +998,293 @@ function AdminPage() {
             </div>
           )}
 
-          {/* TAB 3: TEST QUIZ */}
+          {/* TAB 3: REGISTERED USERS MANAGEMENT */}
+          {activeTab === "users" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h1 style={{ textAlign: "left", margin: 0, fontSize: "1.85rem", fontWeight: "700", color: "#ffffff", fontFamily: "'Outfit', sans-serif" }}>
+                    👥 Registered Users Directory
+                  </h1>
+                  <p style={{ margin: "4px 0 0", color: "#94a3b8", fontSize: "0.92rem" }}>
+                    Track all registered accounts, assigned security roles, and user registration timestamps.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={fetchUsers}
+                  disabled={usersLoading}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: "12px",
+                    background: "rgba(0, 198, 255, 0.15)",
+                    border: "1px solid rgba(0, 198, 255, 0.35)",
+                    color: "#00c6ff",
+                    fontWeight: "600",
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <span>🔄</span> {usersLoading ? "Refreshing..." : "Refresh Users"}
+                </button>
+              </div>
+
+              {/* 👥 KPI & FILTER TOOLBAR */}
+              <div
+                className="liquid-glass"
+                style={{
+                  padding: "18px 22px",
+                  borderRadius: "18px",
+                  background: "rgba(15, 23, 42, 0.65)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.35)",
+                  marginBottom: "24px",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "16px",
+                  alignItems: "center",
+                  justifyContent: "space-between"
+                }}
+              >
+                {/* Search Input */}
+                <div style={{ flex: "1 1 280px" }}>
+                  <input
+                    style={{ margin: 0, width: "100%", height: "44px", borderRadius: "10px" }}
+                    placeholder="🔍 Search users by username or email..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                  />
+                </div>
+
+                {/* Role Filter Pills */}
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                  {[
+                    { key: "ALL", label: `All (${users.length})` },
+                    { key: "USER", label: `Users (${users.filter((u) => (u.role || "").toUpperCase() === "USER").length})` },
+                    { key: "ADMIN", label: `Admins (${users.filter((u) => (u.role || "").toUpperCase() === "ADMIN").length})` }
+                  ].map((filter) => {
+                    const active = userRoleFilter === filter.key;
+                    return (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        onClick={() => setUserRoleFilter(filter.key)}
+                        style={{
+                          padding: "8px 14px",
+                          borderRadius: "10px",
+                          fontSize: "0.83rem",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          border: active ? "1.5px solid #00c6ff" : "1px solid rgba(255, 255, 255, 0.12)",
+                          background: active ? "rgba(0, 198, 255, 0.2)" : "rgba(255, 255, 255, 0.05)",
+                          color: active ? "#ffffff" : "#94a3b8",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        {filter.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 📋 REGISTERED USERS TABLE */}
+              {usersLoading ? (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: "#00c6ff" }}>
+                  <p style={{ fontSize: "1.1rem", fontWeight: "600" }}>Loading registered users...</p>
+                </div>
+              ) : (() => {
+                const filteredUsers = users.filter((u) => {
+                  const query = userSearch.toLowerCase().trim();
+                  const matchesSearch =
+                    !query ||
+                    (u.username && u.username.toLowerCase().includes(query)) ||
+                    (u.email && u.email.toLowerCase().includes(query));
+                  const matchesRole =
+                    userRoleFilter === "ALL" ||
+                    (userRoleFilter === "ADMIN" && (u.role || "").toUpperCase() === "ADMIN") ||
+                    (userRoleFilter === "USER" && (u.role || "").toUpperCase() === "USER");
+                  return matchesSearch && matchesRole;
+                });
+
+                if (filteredUsers.length === 0) {
+                  return (
+                    <div
+                      className="liquid-glass"
+                      style={{
+                        padding: "50px 20px",
+                        textAlign: "center",
+                        borderRadius: "20px",
+                        background: "rgba(15, 23, 42, 0.5)",
+                        border: "1px dashed rgba(255, 255, 255, 0.15)"
+                      }}
+                    >
+                      <span style={{ fontSize: "2.5rem" }}>👥</span>
+                      <h3 style={{ margin: "12px 0 6px", color: "#ffffff", fontSize: "1.1rem" }}>No matching users found</h3>
+                      <p style={{ color: "#94a3b8", fontSize: "0.88rem", margin: 0 }}>
+                        {userSearch ? "Try adjusting your search query or role filter." : "Registered users will appear here once accounts are created."}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    className="liquid-glass"
+                    style={{
+                      borderRadius: "20px",
+                      background: "rgba(15, 23, 42, 0.65)",
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      boxShadow: "0 15px 40px rgba(0, 0, 0, 0.45)",
+                      overflow: "hidden"
+                    }}
+                  >
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(255, 255, 255, 0.04)", borderBottom: "1px solid rgba(255, 255, 255, 0.1)" }}>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>#</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>User</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Email</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Role</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Registered Time</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Quiz Activity</th>
+                            <th style={{ padding: "16px 20px", fontSize: "0.78rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8" }}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredUsers.map((u, idx) => {
+                            const isAdmin = (u.role || "").toUpperCase() === "ADMIN";
+                            const initial = (u.username || "U").charAt(0).toUpperCase();
+
+                            // Format Registration Time
+                            let formattedDate = "Prior to tracking";
+                            let formattedTime = "";
+                            if (u.createdAt) {
+                              try {
+                                const d = new Date(u.createdAt);
+                                if (!isNaN(d.getTime())) {
+                                  formattedDate = d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+                                  formattedTime = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+                                }
+                              } catch {
+                                formattedDate = String(u.createdAt);
+                              }
+                            }
+
+                            return (
+                              <tr
+                                key={u.id || idx}
+                                style={{
+                                  borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+                                  transition: "background 0.2s ease"
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0, 198, 255, 0.05)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                              >
+                                <td style={{ padding: "16px 20px", color: "#64748b", fontSize: "0.85rem", fontWeight: "600" }}>
+                                  #{u.id}
+                                </td>
+
+                                <td style={{ padding: "16px 20px" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                    <div
+                                      style={{
+                                        width: "36px",
+                                        height: "36px",
+                                        borderRadius: "50%",
+                                        background: isAdmin
+                                          ? "linear-gradient(135deg, #00c6ff, #0072ff)"
+                                          : "linear-gradient(135deg, #a855f7, #6366f1)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontWeight: "700",
+                                        fontSize: "0.95rem",
+                                        color: "#ffffff",
+                                        boxShadow: isAdmin ? "0 0 12px rgba(0, 198, 255, 0.4)" : "none"
+                                      }}
+                                    >
+                                      {initial}
+                                    </div>
+                                    <span style={{ fontWeight: "600", color: "#ffffff", fontSize: "0.95rem" }}>
+                                      {u.username}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: "16px 20px", color: "#cbd5e1", fontSize: "0.88rem" }}>
+                                  {u.email || "—"}
+                                </td>
+
+                                <td style={{ padding: "16px 20px" }}>
+                                  <span
+                                    style={{
+                                      padding: "4px 10px",
+                                      borderRadius: "10px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: "700",
+                                      letterSpacing: "0.5px",
+                                      background: isAdmin ? "rgba(0, 198, 255, 0.15)" : "rgba(255, 255, 255, 0.08)",
+                                      color: isAdmin ? "#00c6ff" : "#94a3b8",
+                                      border: isAdmin ? "1px solid rgba(0, 198, 255, 0.4)" : "1px solid rgba(255, 255, 255, 0.12)",
+                                      boxShadow: isAdmin ? "0 0 10px rgba(0, 198, 255, 0.2)" : "none"
+                                    }}
+                                  >
+                                    {isAdmin ? "👑 ADMIN" : "👤 USER"}
+                                  </span>
+                                </td>
+
+                                <td style={{ padding: "16px 20px" }}>
+                                  <div style={{ display: "flex", flexDirection: "column" }}>
+                                    <span style={{ color: "#ffffff", fontSize: "0.88rem", fontWeight: "500", display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <span>📅</span> {formattedDate}
+                                    </span>
+                                    {formattedTime && (
+                                      <span style={{ color: "#94a3b8", fontSize: "0.76rem", marginTop: "2px", marginLeft: "22px" }}>
+                                        🕒 {formattedTime}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: "16px 20px" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span style={{ fontSize: "0.85rem", color: "#00ff88", fontWeight: "600" }}>
+                                      {u.totalQuizzes || 0} {u.totalQuizzes === 1 ? "quiz" : "quizzes"}
+                                    </span>
+                                    {u.highestScore > 0 && (
+                                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                                        (Top: {u.highestScore})
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: "16px 20px" }}>
+                                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#10b981", fontWeight: "600" }}>
+                                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#10b981", boxShadow: "0 0 8px #10b981" }} />
+                                    Active
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* TAB 4: TEST QUIZ */}
           {activeTab === "testquiz" && (
             <div>
               <h1 style={{ textAlign: "left" }}>🧪 Test Quiz</h1>

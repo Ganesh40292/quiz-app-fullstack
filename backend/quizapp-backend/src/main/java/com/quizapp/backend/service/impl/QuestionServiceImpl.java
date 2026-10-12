@@ -149,4 +149,16 @@ public class QuestionServiceImpl implements QuestionService {
         }
         return questionRepository.findByQuestionContainingIgnoreCase(search.trim(), pageable);
     }
+
+    /* =========================
+       SEARCH & FILTER PAGINATED QUESTIONS
+    ========================= */
+    @Override
+    public org.springframework.data.domain.Page<Question> searchFilteredPaginated(String search, String category, String difficulty, org.springframework.data.domain.Pageable pageable) {
+        String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        String cleanCat = (category != null && !category.trim().isEmpty() && !category.equalsIgnoreCase("All")) ? category.trim() : null;
+        String cleanDiff = (difficulty != null && !difficulty.trim().isEmpty() && !difficulty.equalsIgnoreCase("All")) ? difficulty.trim() : null;
+
+        return questionRepository.searchFilteredPaginated(cleanSearch, cleanCat, cleanDiff, pageable);
+    }
 }
